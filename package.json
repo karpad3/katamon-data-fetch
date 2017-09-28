@@ -2,7 +2,7 @@
   "name": "katamon",
   "version": "1.0.0",
   "description": "",
-  "main": "getGames.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,6 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.5",
-    "table-scraper": "^0.1.0"
+    "request": "^2.83.0",
+    "tabletojson": "^0.6.0",
+    "x-ray": "^2.3.2"
   }
 }
