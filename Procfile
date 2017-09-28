@@ -1,1 +1,1 @@
-web: node getGames.js
+web: node index.js
