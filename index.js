@@ -1,13 +1,13 @@
-const scraper = require('table-scraper');
+const scraper = require('./tableScraper.js')
 const express = require('express');
 const app = express();
 
 app.get('/getGames', function (req, res) {
     scraper
-        .get('http://football.org.il/Clubs/Pages/TeamGames.aspx?TEAM_ID=5981&SEASON_ID=19')
+        .get('http://football.org.il/Clubs/Pages/TeamGames.aspx?TEAM_ID=5981&SEASON_ID=19', '#print_1 > table')
         .then(function (tableData) {
             let games = [];
-            const gamesTable = tableData[41];
+            const gamesTable = tableData[0];
 
             gamesTable.map((game, index) => {
                 if (index > 0) {
@@ -29,12 +29,11 @@ app.get('/getGames', function (req, res) {
 });
 
 
-
 app.get('/getLeageTable', function (req, res) {
     scraper
-        .get('http://football.org.il/Leagues/Pages/LeagueDetails.aspx?LEAGUE_ID=45&SEASON_ID=19')
+        .get('http://football.org.il/Clubs/Pages/TeamDetails.aspx?TEAM_ID=5981', '#print_0 > table')
         .then(function (tableData) {
-            const leageTable = tableData.filter(table => table && table.length === 19)[0];
+            const leageTable = tableData[0];
             let leage = [];
             leageTable.map((game, index) => {
                 if (index > 0) {
@@ -57,6 +56,7 @@ app.get('/getLeageTable', function (req, res) {
 });
 
 app.listen(process.env.PORT || 5000);
+console.log('listening on port ', process.env.PORT, '...')
 
 
 
