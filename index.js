@@ -13,7 +13,7 @@ app.get('/getGames', function (req, res) {
                 if (index > 0) {
                     games.push({
                         _id: `0000${index}`,
-                        number: game[0],
+                        number: parseInt(game[0]),
                         date: game[2],
                         homeTeam: game[4].split('-')[0].replace(/\r?\n?\t|\r/g, ''),
                         awayTeam: game[4].split('-')[1].replace(/\r?\n?\t|\r/g, ''),
