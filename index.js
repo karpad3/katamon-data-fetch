@@ -30,35 +30,37 @@ app.get('/getGames', function (req, res) {
 });
 
 
-app.get('/getLeageTable', function (req, res) {
+app.get('/getLeagueTable', function (req, res) {
     scraper
         .get('http://football.org.il/Clubs/Pages/TeamDetails.aspx?TEAM_ID=5981', '#print_0 > table')
         .then(function (tableData) {
-            const leageTable = tableData[0];
-            let leage = [];
-            leageTable.map((game, index) => {
+            let leagueTable = tableData[0];
+            let league = [];
+            leagueTable = leagueTable.filter(team => team[0]);
+
+            leagueTable.map((teamData, index) => {
                 if (index > 0) {
-                    leage.push({
+                    league.push({
                         _id: `0000${index}`,
-                        rank: game[0],
-                        teamName: game[2],
-                        amountOfGames: game[4],
-                        amountOfMissingGames: game[6],
-                        amountOfWins: game[8],
-                        amountOfTie: game[10],
-                        amountOfLoses: game[12],
-                        amountOfGoles: game[14],
-                        difference: game[16],
-                        points: game[18]
+                        rank: teamData[0],
+                        teamName: teamData[2],
+                        amountOfGames: teamData[4],
+                        amountOfMissingGames: teamData[6],
+                        amountOfWins: teamData[8],
+                        amountOfTie: teamData[10],
+                        amountOfLoses: teamData[12],
+                        amountOfGoles: teamData[14],
+                        difference: teamData[16],
+                        points: teamData[18]
                     })
                 }
             });
-            res.send(JSON.stringify(leage));
+            res.send(JSON.stringify(league));
         });
 });
 
 app.listen(process.env.PORT || 5000);
-console.log('listening on port ', process.env.PORT, '...')
+console.log('listening on port ', process.env.PORT || 5000, '...');
 
 
 
