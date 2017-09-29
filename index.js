@@ -59,6 +59,26 @@ app.get('/getLeagueTable', function (req, res) {
         });
 });
 
+app.get('/getTeams', function (req, res) {
+    scraper
+        .get('http://football.org.il/Clubs/Pages/TeamDetails.aspx?TEAM_ID=5981', '#print_0 > table')
+        .then(function (tableData) {
+            let leagueTable = tableData[0];
+            let teams = [];
+            leagueTable = leagueTable.filter(team => team[0]);
+
+            leagueTable.map((teamData, index) => {
+                if (index > 0) {
+                    teams.push({
+                        _id: `0000${index}`,
+                        teamName: teamData[2]
+                    })
+                }
+            });
+            res.send(JSON.stringify(teams));
+        });
+});
+
 app.listen(process.env.PORT || 5000);
 console.log('listening on port ', process.env.PORT || 5000, '...');
 
