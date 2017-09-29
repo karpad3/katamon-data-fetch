@@ -12,6 +12,7 @@ app.get('/getGames', function (req, res) {
             gamesTable.map((game, index) => {
                 if (index > 0) {
                     games.push({
+                        _id: `0000${index}`,
                         number: game[0],
                         date: game[2],
                         homeTeam: game[4].split('-')[0].replace(/\r?\n?\t|\r/g, ''),
@@ -38,6 +39,7 @@ app.get('/getLeageTable', function (req, res) {
             leageTable.map((game, index) => {
                 if (index > 0) {
                     leage.push({
+                        _id: `0000${index}`,
                         rank: game[0],
                         teamName: game[2],
                         amountOfGames: game[4],
