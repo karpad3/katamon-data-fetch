@@ -42,7 +42,7 @@ app.get('/getLeagueTable', function (req, res) {
                 if (index > 0) {
                     league.push({
                         _id: `0000${index}`,
-                        rank: teamData[0],
+                        rank: parseInt(teamData[0]),
                         teamName: teamData[2],
                         amountOfGames: teamData[4],
                         amountOfMissingGames: teamData[6],
