@@ -2,11 +2,11 @@
 var request = require('request');
 var xray = require('x-ray')();
 
-// temporary...revert if PR to handle duplicate column headers is accepted
 var tabletojson = require('tabletojson');
 
-module.exports.get = function get(url, tableId) {
+module.exports.get = function get(url, tableId, options) {
     tableId = tableId || 'table';
+    options = options || {};
     return new Promise(function(resolve, reject) {
         request.get(url, function(err, response, body) {
             if (err) {
@@ -20,10 +20,9 @@ module.exports.get = function get(url, tableId) {
                     return reject(conversionError);
                 }
                 resolve(tableHtmlList.map(function(table) {
-                    return tabletojson.convert('<table>' + table + '</table>')[0];
+                    return tabletojson.convert('<table>' + table + '</table>', options)[0];
                 }));
             });
         })
     });
 };
-
