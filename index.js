@@ -1,5 +1,6 @@
 const scraper = require('./tableScraper.js')
 const express = require('express');
+const xray = require('x-ray')();
 
 
 const app = express();
@@ -60,6 +61,63 @@ app.get('/getLeagueTable', function (req, res) {
         });
 });
 
+app.get('/getPlayerStatistics/:playerId', function (req, res) {
+    const playerId = req.param("playerId");
+
+    xray(`http://mng.football.org.il/Leagues/Pages/PlayerDetails.aspx?PLAYER_ID=${playerId}`, '#print_1 > table', [{
+        games: xray('.BDCItemStyle, .BDCItemAlternateStyle', [{
+            date: 'td:nth-child(1)',
+            misgeret: 'td:nth-child(3)',
+            name: 'td:nth-child(5)',
+            substitutionTime: 'td:nth-child(9) td',
+            substitution: 'td:nth-child(9) img@src',
+            result: 'td:nth-child(11)',
+            yellowCards: 'td:nth-child(13) img@src',
+            redCards: 'td:nth-child(15) img@src',
+            goals: 'td:nth-child(17)',
+        }])
+    }])
+    ((err, data) => {
+        let fetchedGames = data[0].games;
+        fetchedGames = fetchedGames.filter((game) => {
+            return game.name.indexOf('קטמון') > 0
+        });
+
+        let gamesPlayed = [];
+        getRedCardsData = (redData) => {
+            if (!redData) {
+                return '';
+            }
+            if (redData.indexOf('yellow2') > 0) {
+                return '2 yellows';
+            } else {
+                return 'red';
+            }
+        };
+        const season = "2017-2018";
+
+        fetchedGames.map((game, index) => {
+            gamesPlayed.push({
+                _id: `${playerId}-${season}-00${index}`,
+                date: game.date,
+                misgeret: game.misgeret,
+                name: game.name,
+                season,
+                substitutionTime: game.substitutionTime || '',
+                substitution: (game.substitution) ? ((game.substitution.indexOf('red') > 0) ? 'out' : 'in') : '',
+                result: game.result,
+                yellowCards: game.yellowCards ? 'Yellow' : '',
+                redCards: (game.redCards) ? ((game.redCards.indexOf('yellow2') > 0) ? '2 yellows' : 'red') : '',
+                playerId: playerId,
+                goals: game.goals
+            });
+        });
+
+        res.send(JSON.stringify(gamesPlayed));
+    });
+
+});
+
 app.get('/getTeams', function (req, res) {
     scraper
         .get('http://mng.football.org.il/Clubs/Pages/TeamDetails.aspx?TEAM_ID=5981', '#print_0 > table')
@@ -77,46 +135,6 @@ app.get('/getTeams', function (req, res) {
                 }
             });
             res.send(JSON.stringify(teams));
-        });
-});
-
-app.get('/getPlayerStatistics/:playerId', function (req, res) {
-    const playerId = req.param("playerId");
-    scraper
-        .get(`http://mng.football.org.il/Leagues/Pages/PlayerDetails.aspx?PLAYER_ID=${playerId}&SEASON_ID=19`, '.BDCTable')
-        .then((tableData) => {
-            let totalAmountOfGoals = parseInt(tableData[0][5][2]);
-            let totalYellowCards = parseInt(tableData[1][1][2]) + parseInt(tableData[1][2][2]);
-            let totalRedCards = parseInt(tableData[1][3][2]);
-            const gamesData = tableData[2].filter((game) => {
-                return game[0].indexOf("/") > 0 && game[4].indexOf("קטמון") > 0
-            });
-            let gamesPlayed = [];
-            const season = "2017-2018";
-
-            gamesData.map((gameData, index) => {
-                if (index > 0) {
-                    gamesPlayed.push({
-                        _id: `${playerId}-${season}-00${index}`,
-                        gameDate: gameData[0],
-                        misgeret: gameData[2],
-                        gameName: gameData[4],
-                        gameResult: gameData[10],
-                        goals: gameData[16]
-                    })
-                }
-            });
-
-            const playerStatistics = {
-                season,
-                totalAmountOfGoals,
-                totalYellowCards,
-                totalRedCards,
-                playerId,
-                gamesPlayed
-            };
-
-            res.send(JSON.stringify(playerStatistics));
         });
 });
 
