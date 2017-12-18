@@ -100,6 +100,7 @@ app.get('/getPlayerStatistics/:playerId', function (req, res) {
             gamesPlayed.push({
                 _id: `${playerId}-${season}-00${index}`,
                 title: `${playerId}-${season}-00${index}`,
+                order: index,
                 date: game.date,
                 misgeret: game.misgeret,
                 name: game.name,
