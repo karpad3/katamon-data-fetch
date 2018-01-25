@@ -179,7 +179,7 @@ app.get('/getTeams', function (req, res) {
         await page.goto('http://football.org.il/leagues/league/?league_id=45&season_id=19');
 
         const result = await page.evaluate(() => {
-            const leageData = [];
+            const data = [];
             const table = document.querySelector('.playoff-container');
             const teams = table.querySelectorAll('.table_row');
             teams.forEach((team, index) => {
@@ -188,9 +188,9 @@ app.get('/getTeams', function (req, res) {
                 res._id = `0000${index + 1}`;
                 const teamNameSR = team.childNodes[1].children[0].innerText;
                 res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '');
-                leageData.push(res);
+                data.push(res);
             });
-            return leageData;
+            return data;
         });
 
         browser.close();
