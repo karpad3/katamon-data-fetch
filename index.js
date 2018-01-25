@@ -7,7 +7,9 @@ const app = express();
 app.get('/getGames', function (req, res) {
 
     let scrape = async () => {
-        const browser = await puppeteer.launch({headless: false});
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
         const page = await browser.newPage();
         await page.goto('http://football.org.il/team-details/team-games/?team_id=5981&season_id=19');
 
