@@ -54,7 +54,9 @@ app.get('/getGames', function (req, res) {
 
 app.get('/getLeagueTable', function (req, res) {
     let scrape = async () => {
-        const browser = await puppeteer.launch({headless: false});
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
         const page = await browser.newPage();
         await page.goto('http://football.org.il/leagues/league/?league_id=45&season_id=19');
 
@@ -105,7 +107,9 @@ app.get('/getPlayerStatistics/:playerId', function (req, res) {
     const playerId = req.params.playerId;
 
     let scrape = async () => {
-        const browser = await puppeteer.launch({headless: false});
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
         const page = await browser.newPage();
 
         await page.goto(`http://football.org.il/players/player/?player_id=${playerId}`);
@@ -176,7 +180,9 @@ app.get('/getPlayerStatistics/:playerId', function (req, res) {
 app.get('/getTeams', function (req, res) {
 
     let scrape = async () => {
-        const browser = await puppeteer.launch({headless: false});
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
         const page = await browser.newPage();
         await page.goto('http://football.org.il/leagues/league/?league_id=45&season_id=19');
 
