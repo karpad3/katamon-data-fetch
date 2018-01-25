@@ -69,7 +69,7 @@ app.get('/getLeagueTable', function (req, res) {
 
                 res._id = `0000${index + 1}`;
                 const rankSR = team.childNodes[0].children[0].innerText;
-                res.rank = team.childNodes[0].innerText.replace(rankSR, '');
+                res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
                 const teamNameSR = team.childNodes[1].children[0].innerText;
                 res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '');
                 const amountOfGamesSR = team.childNodes[2].children[0].innerText;
