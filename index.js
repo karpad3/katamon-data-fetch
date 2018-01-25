@@ -130,6 +130,7 @@ app.get('/getPlayerStatistics/:playerId', function (req, res) {
 
                 if (isKatamonGame && isBogrimGame) {
                     res._id = `${playerId2}-${season}-${index}`;
+                    res.order = index;
                     const dateSR = game.childNodes[1].children[0].innerText;
                     res.date = game.childNodes[1].innerText.replace(dateSR, '');
                     const misgeretSR = game.childNodes[3].children[0].innerText;
