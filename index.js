@@ -125,6 +125,9 @@ app.get('/getPlayerStatistics/:playerId', function (req, res) {
             games.forEach((game, index) => {
                 const res = {};
 
+                const urlParams = game.href.split("=");
+                const gameId = urlParams[urlParams.length - 1];
+
                 const isKatamonGame = game.childNodes[5].textContent.indexOf('הפועל קטמון ירושלים') > 0;
                 const isBogrimGame = game.childNodes[3].textContent.indexOf('נוער') < 0;
 
@@ -138,6 +141,7 @@ app.get('/getPlayerStatistics/:playerId', function (req, res) {
                     const nameSR = game.childNodes[5].children[0].innerText;
                     res.name = game.childNodes[5].innerText.replace(nameSR, '');
                     res.season = season;
+                    res.gameId = gameId;
 
                     const substitutionTimeSR = game.childNodes[9].children[0].innerText;
                     const substitutionTime = game.childNodes[9].innerText.replace(substitutionTimeSR, '');
