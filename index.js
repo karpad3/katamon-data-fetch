@@ -17,11 +17,18 @@ app.get('/getGames', function (req, res) {
             const data = [];
             const table = document.querySelector('.table_row_group');
             const games = table.querySelectorAll('.table_row');
+            const season = "2017-2018";
+
             games.forEach((game, index) => {
                 const res = {};
 
+                const urlParams = game.href.split("=");
+                const gameId = urlParams[urlParams.length - 1];
+
                 res._id = `0000${index + 1}`;
                 res.number = index + 1;
+                res.gameId = gameId;
+                res.season = season;
                 const dateSR = game.childNodes[1].children[0].innerText;
                 res.date = game.childNodes[1].innerText.replace(dateSR, '');
                 const homeTeamSR = game.childNodes[3].children[0].innerText;
