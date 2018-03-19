@@ -25,7 +25,7 @@ app.get('/getGames', function (req, res) {
                 const urlParams = game.href.split("=");
                 const gameId = urlParams[urlParams.length - 1];
 
-                res._id = `0000${index + 1}`;
+                res._id = `${gameId}-${season}-${index}`;
                 res.number = index + 1;
                 res.gameId = gameId;
                 res.season = season;
