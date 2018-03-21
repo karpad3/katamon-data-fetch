@@ -189,6 +189,189 @@ app.get('/getPlayerStatistics/:playerId', function (req, res) {
     });
 });
 
+app.get('/getGamePlayersData/:gameId', function (req, res) {
+
+    const gameId = req.params.gameId;
+
+    let scrape = async () => {
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: false
+        });
+        const page = await browser.newPage();
+
+        await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
+
+        await page.exposeFunction('getGameId', () => gameId);
+
+        const result = await page.evaluate(async () => {
+
+            const numberPattern = /\d+/g;
+            const gameId2 = await window.getGameId();
+            const season = "2017-2018";
+
+            const getPlayerData = (player, index, playerStatus, isHome, gameId, season) => {
+                const res = {};
+
+                const playerLink = player.parentElement;
+                const urlParams = playerLink.href.split("=");
+                const playerId = urlParams[urlParams.length - 1];
+
+                res._id = `${season}-${gameId2}-${playerId}`;
+                res.order = index;
+                res.shirtNum = player.querySelector('.number').innerText.match(numberPattern)[0];
+                res.playerState = playerStatus;
+                res.gameId = gameId;
+                res.isHome = isHome;
+                res.name = player.querySelector('.name').innerText;
+                res.season = season;
+                res.yellowCard = getGameEventTime(player, '.yellow');
+                res.yellow2Card = getGameEventTime(player, '.yellow2');
+                res.redCard = getGameEventTime(player, '.red');
+                res.changeDown = getGameEventTime(player, '.change-down');
+                res.changeUp = getGameEventTime(player, '.change-up');
+                res.goalsTime = getGoalsData(player);
+                res.goalsSum = res.goalsTime && JSON.parse(res.goalsTime).length;
+
+                return res;
+            };
+
+            const getGameEventTime = (player, eventSelector) => {
+                const event = player.querySelector(eventSelector);
+                if (event) {
+                    const yellowNode = event.innerHTML.split(">");
+                    return yellowNode[yellowNode.length - 1];
+                }
+                return null;
+            };
+
+            const getGoalsData = (player) => {
+                let eventsText = player.querySelector('.moves').innerText;
+                eventsText = eventsText.replace(/שערדקה/g, 'a');
+                let goals = eventsText.match(/\b[a](\d*\.?\d+)/g);
+                if (goals && goals.length) {
+                    goals = goals.map(item => item.replace(/a/g, ""));
+                    return JSON.stringify(goals);
+                } else {
+                    return null;
+                }
+            };
+
+            const playersData = [];
+
+            const activeHomePlayers = document.querySelectorAll('.home.Active .player');
+            const activeAwayPlayers = document.querySelectorAll('.guest.Active .player');
+
+            const benchHomePlayers = document.querySelectorAll('.home.Replacement .player');
+            const benchAwayPlayers = document.querySelectorAll('.home.Replacement .player');
+
+            const replacementHomePlayers = document.querySelectorAll('.home.Bench .player');
+            const replacementAwayPlayers = document.querySelectorAll('.home.Bench .player');
+
+            activeHomePlayers.forEach((player, index) => {
+                playersData.push(getPlayerData(player, index, 'active', true, gameId2, season));
+            });
+            activeAwayPlayers.forEach((player, index) => {
+                playersData.push(getPlayerData(player, index, 'active', false, gameId2, season));
+            });
+
+            replacementHomePlayers.forEach((player, index) => {
+                playersData.push(getPlayerData(player, index, 'replacement', true, gameId2, season));
+            });
+
+            replacementAwayPlayers.forEach((player, index) => {
+                playersData.push(getPlayerData(player, index, 'replacement', false, gameId2, season));
+            });
+
+            benchHomePlayers.forEach((player, index) => {
+                playersData.push(getPlayerData(player, index, 'bench', true, gameId2, season));
+            });
+
+            benchAwayPlayers.forEach((player, index) => {
+                playersData.push(getPlayerData(player, index, 'bench', false, gameId2, season));
+            });
+
+            return playersData;
+        });
+
+        browser.close();
+        return result;
+    };
+
+    scrape().then((value) => {
+        res.send(JSON.stringify(value));
+    });
+});
+
+app.get('/getGameStaffData/:gameId', function (req, res) {
+
+    const gameId = req.params.gameId;
+
+    let scrape = async () => {
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: false
+        });
+        const page = await browser.newPage();
+
+        await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
+
+        await page.exposeFunction('getGameId', () => gameId);
+
+        const result = await page.evaluate(async () => {
+
+            const gameId2 = await window.getGameId();
+            const season = "2017-2018";
+
+            const getJudgesPosition = (judge) => {
+                const position = judge.querySelector('.position').innerText;
+                switch (position) {
+                    case 'שופט רביעי':
+                        return 'judge4';
+                    case 'עוזר שופט 2':
+                        return 'judge2';
+                    case 'עוזר שופט 1':
+                        return 'judge1';
+                    case 'שופט ראשי':
+                        return 'mainJudge';
+                    default:
+                        return null;
+                }
+            };
+
+            const homeCoach = document.querySelector('#GAME_COACH_HOME').parentElement.querySelector('.player');
+            const awayCoach = document.querySelector('#GAME_COACH_GUEST').parentElement.querySelector('.player');
+
+            res = {
+                _id: `${season}-${gameId2}`,
+                gameId: gameId2,
+                season: season,
+                homeCoach: homeCoach.querySelector('.name').innerText,
+                awayCoach: awayCoach.querySelector('.name').innerText,
+            };
+
+            const judges = document.querySelector('.judge').querySelectorAll('.player');
+            judges.forEach(judge => {
+                const name = judge.querySelector('.name').innerText;
+                const position = getJudgesPosition(judge);
+                if (position) {
+                    res[position] = name;
+                }
+            });
+
+
+            return res;
+        });
+
+        browser.close();
+        return result;
+    };
+
+    scrape().then((value) => {
+        res.send(JSON.stringify(value));
+    });
+});
+
 app.get('/getTeams', function (req, res) {
 
     let scrape = async () => {
@@ -221,7 +404,6 @@ app.get('/getTeams', function (req, res) {
         res.send(JSON.stringify(value));
     });
 });
-
 
 app.listen(process.env.PORT || 5000);
 console.log('listening on port ', process.env.PORT || 5000, '...');
