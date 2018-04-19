@@ -69,8 +69,7 @@ app.get('/getLeagueTable', function (req, res) {
 
         const result = await page.evaluate(() => {
             const leageData = [];
-            const table = document.querySelector('.playoff-container');
-            const teams = table.querySelectorAll('.table_row');
+            const teams = document.querySelectorAll('.playoff-container > .table_row')
             const season = "2017-2018";
 
             teams.forEach((team, index) => {
@@ -305,14 +304,16 @@ app.get('/getTeams', function (req, res) {
 
         const result = await page.evaluate(() => {
             const data = [];
-            const table = document.querySelector('.playoff-container');
-            const teams = table.querySelectorAll('.table_row');
+            const teams = document.querySelectorAll('.playoff-container > .table_row')
+            const season = "2017-2018";
+
             teams.forEach((team, index) => {
                 const res = {};
 
-                res._id = `0000${index + 1}`;
+                res._id = `${season}-${index + 1}`;
                 const teamNameSR = team.childNodes[1].children[0].innerText;
                 res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '');
+                res.season = season;
                 data.push(res);
             });
             return data;
