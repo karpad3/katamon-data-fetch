@@ -184,11 +184,11 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
             const activeHomePlayers = document.querySelectorAll('.home.Active .player');
             const activeAwayPlayers = document.querySelectorAll('.guest.Active .player');
 
-            const benchHomePlayers = document.querySelectorAll('.home.Replacement .player');
-            const benchAwayPlayers = document.querySelectorAll('.home.Replacement .player');
+            const benchHomePlayers = document.querySelectorAll('.home.Bench .player');
+            const benchAwayPlayers = document.querySelectorAll('.guest.Bench .player');
 
-            const replacementHomePlayers = document.querySelectorAll('.home.Bench .player');
-            const replacementAwayPlayers = document.querySelectorAll('.home.Bench .player');
+            const replacementHomePlayers = document.querySelectorAll('.home.Replacement  .player');
+            const replacementAwayPlayers = document.querySelectorAll('.guest.Replacement  .player');
 
             activeHomePlayers.forEach((player, index) => {
                 playersData.push(getPlayerData(player, index, 'active', true, gameId2, season));
