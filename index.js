@@ -4,6 +4,9 @@ const puppeteer = require('puppeteer');
 
 const app = express();
 
+const SEASON_ID = '20';
+const SEASON = '2018-2019';
+
 app.get('/getGames', function (req, res) {
 
     let scrape = async () => {
@@ -11,13 +14,12 @@ app.get('/getGames', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
-        await page.goto('http://football.org.il/team-details/team-games/?team_id=5981&season_id=19');
+        await page.goto(`http://football.org.il/team-details/team-games/?team_id=5981&season_id=${SEASON_ID}`);
 
-        const result = await page.evaluate(() => {
+        const result = await page.evaluate((season) => {
             const data = [];
             const table = document.querySelector('.table_row_group');
             const games = table.querySelectorAll('.table_row');
-            const season = "2017-2018";
 
             games.forEach((game, index) => {
                 const res = {};
@@ -47,7 +49,7 @@ app.get('/getGames', function (req, res) {
                 data.push(res);
             });
             return data;
-        });
+        }, SEASON);
 
         browser.close();
         return result;
@@ -65,12 +67,11 @@ app.get('/getLeagueTable', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
-        await page.goto('http://football.org.il/leagues/league/?league_id=45&season_id=19');
+        await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
 
-        const result = await page.evaluate(() => {
+        const result = await page.evaluate((season) => {
             const leageData = [];
             const teams = document.querySelectorAll('.playoff-container > .table_row')
-            const season = "2017-2018";
 
             teams.forEach((team, index) => {
                 const res = {};
@@ -96,10 +97,11 @@ app.get('/getLeagueTable', function (req, res) {
                 res.difference = team.childNodes[8].innerText.replace(differenceSR, '');
                 const pointesSR = team.childNodes[9].children[0].innerText;
                 res.points = team.childNodes[9].innerText.replace(pointesSR, '');
+                res.season = season;
                 leageData.push(res);
             });
             return leageData;
-        });
+        }, SEASON);
 
         browser.close();
         return result;
@@ -119,17 +121,13 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
         const browser = await puppeteer.launch({
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
-        const page = await browser.newPage();
 
+        const page = await browser.newPage();
         await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
-        await page.exposeFunction('getGameId', () => gameId);
-
-        const result = await page.evaluate(async () => {
+        const result = await page.evaluate((season, game_id) => {
 
             const numberPattern = /\d+/g;
-            const gameId2 = await window.getGameId();
-            const season = "2017-2018";
 
             const getPlayerData = (player, index, playerStatus, isHome, gameId, season) => {
                 const res = {};
@@ -138,11 +136,11 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
                 const urlParams = playerLink.href.split("=");
                 const playerId = urlParams[urlParams.length - 1];
 
-                res._id = `${season}-${gameId2}-${playerId}`;
+                res._id = `${season}-${gameId}-${playerId}`;
                 res.order = index;
                 res.shirtNum = player.querySelector('.number').innerText.match(numberPattern)[0];
                 res.playerState = playerStatus;
-                res.gameId = gameId2;
+                res.gameId = gameId;
                 res.playerId = playerId;
                 res.isHome = isHome;
                 res.name = player.querySelector('.name').innerText;
@@ -191,30 +189,30 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
             const replacementAwayPlayers = document.querySelectorAll('.guest.Replacement  .player');
 
             activeHomePlayers.forEach((player, index) => {
-                playersData.push(getPlayerData(player, index, 'active', true, gameId2, season));
+                playersData.push(getPlayerData(player, index, 'active', true, game_id, season));
             });
             activeAwayPlayers.forEach((player, index) => {
-                playersData.push(getPlayerData(player, index, 'active', false, gameId2, season));
+                playersData.push(getPlayerData(player, index, 'active', false, game_id, season));
             });
 
             replacementHomePlayers.forEach((player, index) => {
-                playersData.push(getPlayerData(player, index, 'replacement', true, gameId2, season));
+                playersData.push(getPlayerData(player, index, 'replacement', true, game_id, season));
             });
 
             replacementAwayPlayers.forEach((player, index) => {
-                playersData.push(getPlayerData(player, index, 'replacement', false, gameId2, season));
+                playersData.push(getPlayerData(player, index, 'replacement', false, game_id, season));
             });
 
             benchHomePlayers.forEach((player, index) => {
-                playersData.push(getPlayerData(player, index, 'bench', true, gameId2, season));
+                playersData.push(getPlayerData(player, index, 'bench', true, game_id, season));
             });
 
             benchAwayPlayers.forEach((player, index) => {
-                playersData.push(getPlayerData(player, index, 'bench', false, gameId2, season));
+                playersData.push(getPlayerData(player, index, 'bench', false, game_id, season));
             });
 
             return playersData;
-        });
+        }, SEASON, gameId);
 
         browser.close();
         return result;
@@ -237,12 +235,8 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
 
         await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
-        await page.exposeFunction('getGameId', () => gameId);
 
-        const result = await page.evaluate(async () => {
-
-            const gameId2 = await window.getGameId();
-            const season = "2017-2018";
+        const result = await page.evaluate((season, game_id) => {
 
             const getJudgesPosition = (judge) => {
                 const position = judge.querySelector('.position').innerText;
@@ -264,8 +258,8 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
             const awayCoach = document.querySelector('#GAME_COACH_GUEST').parentElement.querySelector('.player');
 
             res = {
-                _id: `${season}-${gameId2}`,
-                gameId: gameId2,
+                _id: `${season}-${game_id}`,
+                gameId: game_id,
                 season: season,
                 homeCoach: homeCoach.querySelector('.name').innerText,
                 awayCoach: awayCoach.querySelector('.name').innerText,
@@ -282,7 +276,7 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
 
 
             return res;
-        });
+        }, SEASON, gameId);
 
         browser.close();
         return result;
@@ -300,12 +294,11 @@ app.get('/getTeams', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
-        await page.goto('http://football.org.il/leagues/league/?league_id=45&season_id=19');
+        await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
 
-        const result = await page.evaluate(() => {
+        const result = await page.evaluate((season) => {
             const data = [];
             const teams = document.querySelectorAll('.playoff-container > .table_row')
-            const season = "2017-2018";
 
             teams.forEach((team, index) => {
                 const res = {};
@@ -317,7 +310,7 @@ app.get('/getTeams', function (req, res) {
                 data.push(res);
             });
             return data;
-        });
+        }, SEASON);
 
         browser.close();
         return result;
