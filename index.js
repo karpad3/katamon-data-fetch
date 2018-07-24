@@ -4,8 +4,10 @@ const puppeteer = require('puppeteer');
 
 const app = express();
 
-const SEASON_ID = '20';
-const SEASON = '2018-2019';
+const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
+
+const SEASON_ID = '13';
+const SEASON = '2011-2012';
 
 app.get('/getGames', function (req, res) {
 
@@ -67,7 +69,7 @@ app.get('/getLeagueTable', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
-        await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
+        await page.goto(`http://football.org.il/leagues/league/?league_id=62&season_id=${SEASON_ID}`);
 
         const result = await page.evaluate((season) => {
             const leageData = [];
@@ -317,6 +319,43 @@ app.get('/getTeams', function (req, res) {
     };
 
     scrape().then((value) => {
+        res.send(JSON.stringify(value));
+    });
+});
+
+
+app.get('/getImages/:season/:folderName', (req, res)=>{
+    
+    const currentSeason = req.params.season;
+    const folderName = req.params.folderName;
+    const path = `${currentSeason}/${folderName}`;
+
+    const ListFilesRequest = require('media-platform-js-sdk').file.ListFilesRequest;
+    const listFilesRequest = new ListFilesRequest().setPageSize(100)
+    
+    const mediaPlatform = new MediaPlatform({
+        domain: process.env.WMP_DOMAIN,
+        appId: process.env.WMP_APP_ID,
+        sharedSecret: process.env.WMP_SHARED_SECRET
+    });
+
+    let getImages = async () => {
+        const res = [];
+        const baseURL = '//wixmp-d020067862c3c2034fa3ac3a.wixmp.com';
+        const files = await mediaPlatform.fileManager.listFiles(`/${path}`, listFilesRequest);
+
+        files.files.forEach(file => {
+            res.push({
+                imageUrl: baseURL + file.path,
+                season: currentSeason,
+                folderName
+            })
+        });
+
+        return res;
+    }
+
+    getImages().then((value) => {
         res.send(JSON.stringify(value));
     });
 });
