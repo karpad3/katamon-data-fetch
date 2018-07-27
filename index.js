@@ -6,8 +6,8 @@ const app = express();
 
 const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
 
-const SEASON_ID = '13';
-const SEASON = '2011-2012';
+const SEASON_ID = '20';
+const SEASON = '2018-2019';
 
 app.get('/getGames', function (req, res) {
 
@@ -324,15 +324,15 @@ app.get('/getTeams', function (req, res) {
 });
 
 
-app.get('/getImages/:season/:folderName', (req, res)=>{
-    
+app.get('/getImages/:season/:folderName', (req, res) => {
+
     const currentSeason = req.params.season;
     const folderName = req.params.folderName;
     const path = `${currentSeason}/${folderName}`;
 
     const ListFilesRequest = require('media-platform-js-sdk').file.ListFilesRequest;
     const listFilesRequest = new ListFilesRequest().setPageSize(100)
-    
+
     const mediaPlatform = new MediaPlatform({
         domain: process.env.WMP_DOMAIN,
         appId: process.env.WMP_APP_ID,
@@ -354,11 +354,35 @@ app.get('/getImages/:season/:folderName', (req, res)=>{
 
         return res;
     }
-
-    getImages().then((value) => {
-        res.send(JSON.stringify(value));
+    
+    getImages().then((images) => {
+        insertImageToDB(images);
+        res.send(JSON.stringify(images));
     });
 });
+
+const insertImageToDB = (images) => {
+    const request = require("request");
+
+    const options = {
+        method: 'POST',
+        url: 'https://chene68.wixsite.com/mysite-112/_functions/updateImage',
+        headers:
+        {
+            'cache-control': 'no-cache',
+            'content-type': 'application/json'
+        },
+        body: images,
+        json: true
+    };
+
+    request(options, function (error, response, body) {
+        if (error) throw new Error(error);
+
+        console.log(body);
+    });
+
+}
 
 app.listen(process.env.PORT || 5000);
 console.log('listening on port ', process.env.PORT || 5000, '...');
