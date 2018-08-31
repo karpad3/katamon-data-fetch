@@ -69,7 +69,7 @@ app.get('/getLeagueTable', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
-        await page.goto(`http://football.org.il/leagues/league/?league_id=62&season_id=${SEASON_ID}`);
+        await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
 
         const result = await page.evaluate((season) => {
             const leageData = [];
