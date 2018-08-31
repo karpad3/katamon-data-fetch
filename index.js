@@ -354,19 +354,69 @@ app.get('/getImages/:season/:folderName', (req, res) => {
 
         return res;
     }
-    
+
     getImages().then((images) => {
         insertImageToDB(images);
         res.send(JSON.stringify(images));
     });
 });
 
+
+app.get('/updateAllImages/:season', (req, res) => {
+
+    const currentSeason = req.params.season;
+    const path = `/${currentSeason}`;
+
+    getFilesFromMediaPlatform(path).then((data) => {
+        if (data.files) {
+            data.files.forEach(folder => {
+                if (folder.type === "d") {
+                    getFilesFromMediaPlatform(folder.path).then(data => {
+                        const res = [];
+                        const baseURL = '//wixmp-d020067862c3c2034fa3ac3a.wixmp.com';
+                        const folderName = folder.path.replace(`/${currentSeason}/`, "");
+                        if (data.files) {
+                            data.files.forEach((file) => {
+                                res.push({
+                                    imageUrl: baseURL + file.path,
+                                    season: currentSeason,
+                                    folderName
+                                });
+                            });
+                        }
+                        if (res && res.length) {
+                            console.log('inserting', res);
+                            insertImageToDB(res);
+                        }
+                    });
+                }
+            })
+        }
+    });
+});
+
+
+const getFilesFromMediaPlatform = (path) => {
+
+    const mediaPlatform = new MediaPlatform({
+        domain: process.env.WMP_DOMAIN,
+        appId: process.env.WMP_APP_ID,
+        sharedSecret: process.env.WMP_SHARED_SECRET
+    });
+
+    const ListFilesRequest = require('media-platform-js-sdk').file.ListFilesRequest;
+    const listFilesRequest = new ListFilesRequest().setPageSize(1000)
+
+    return mediaPlatform.fileManager.listFiles(path, listFilesRequest);
+}
+
+
 const insertImageToDB = (images) => {
     const request = require("request");
 
     const options = {
         method: 'POST',
-        url: 'https://chene68.wixsite.com/mysite-112/_functions/updateImage',
+        url: 'https://taldo8.wixsite.com/katamon2/_functions/updateImage',
         headers:
         {
             'cache-control': 'no-cache',
@@ -377,9 +427,13 @@ const insertImageToDB = (images) => {
     };
 
     request(options, function (error, response, body) {
-        if (error) throw new Error(error);
-
-        console.log(body);
+        if (error) {
+            //throw new Error(error);
+            console.log('error while inserting to db', error);
+        } else {
+            console.log('insert sucess');
+            return response;
+        }
     });
 
 }
