@@ -387,7 +387,7 @@ app.get('/updateAllImages/:season', (req, res) => {
                         }
                         if (res && res.length) {
                             console.log('inserting', res);
-                            insertImageToDB(res, season);
+                            insertImageToDB(res, currentSeason);
                         }
                     });
                 }
