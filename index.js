@@ -367,6 +367,7 @@ app.get('/updateAllImages/:season', (req, res) => {
     const currentSeason = req.params.season;
     const path = `/${currentSeason}`;
 
+    //todo: add credit field
     getFilesFromMediaPlatform(path).then((data) => {
         if (data.files) {
             data.files.forEach(folder => {
@@ -386,7 +387,7 @@ app.get('/updateAllImages/:season', (req, res) => {
                         }
                         if (res && res.length) {
                             console.log('inserting', res);
-                            insertImageToDB(res);
+                            insertImageToDB(res, season);
                         }
                     });
                 }
@@ -411,7 +412,7 @@ const getFilesFromMediaPlatform = (path) => {
 }
 
 
-const insertImageToDB = (images) => {
+const insertImageToDB = (images, season) => {
     const request = require("request");
 
     const options = {
@@ -422,7 +423,10 @@ const insertImageToDB = (images) => {
             'cache-control': 'no-cache',
             'content-type': 'application/json'
         },
-        body: images,
+        body: {
+            images,
+            season
+        },
         json: true
     };
 
