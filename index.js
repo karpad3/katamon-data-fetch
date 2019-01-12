@@ -356,7 +356,7 @@ app.get('/getImages/:season/:folderName', (req, res) => {
     }
 
     getImages().then((images) => {
-        insertImageToDB(images);
+        insertImageToDB(images, currentSeason);
         res.send(JSON.stringify(images));
     });
 });
