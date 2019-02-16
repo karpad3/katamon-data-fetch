@@ -79,26 +79,31 @@ app.get('/getLeagueTable', function (req, res) {
                 const res = {};
 
                 res._id = `${season}-${index + 1}`;
+            //     debugger
                 const rankSR = team.childNodes[0].children[0].innerText;
                 res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
+
                 const teamNameSR = team.childNodes[1].children[0].innerText;
                 res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '');
+
                 const amountOfGamesSR = team.childNodes[2].children[0].innerText;
                 res.amountOfGames = team.childNodes[2].innerText.replace(amountOfGamesSR, '');
-                const amountOfMissingGamesSR = team.childNodes[3].children[0].innerText;
-                res.amountOfMissingGames = team.childNodes[3].innerText.replace(amountOfMissingGamesSR, '');
-                const amountOfWinsSR = team.childNodes[4].children[0].innerText;
-                res.amountOfWins = team.childNodes[4].innerText.replace(amountOfWinsSR, '');
-                const amountOfTieSR = team.childNodes[5].children[0].innerText;
-                res.amountOfTie = team.childNodes[5].innerText.replace(amountOfTieSR, '');
-                const amountOfLosesSR = team.childNodes[6].children[0].innerText;
-                res.amountOfLoses = team.childNodes[6].innerText.replace(amountOfLosesSR, '');
-                const amountOfGolesSR = team.childNodes[7].children[0].innerText;
-                res.amountOfGoles = team.childNodes[7].innerText.replace(amountOfGolesSR, '');
-                const differenceSR = team.childNodes[8].children[0].innerText;
-                res.difference = team.childNodes[8].innerText.replace(differenceSR, '');
-                const pointesSR = team.childNodes[9].children[0].innerText;
-                res.points = team.childNodes[9].innerText.replace(pointesSR, '');
+
+                const amountOfWinsSR = team.childNodes[3].children[0].innerText;
+                res.amountOfWins = team.childNodes[3].innerText.replace(amountOfWinsSR, '');
+
+                const amountOfTieSR = team.childNodes[4].children[0].innerText;
+                res.amountOfTie = team.childNodes[4].innerText.replace(amountOfTieSR, '');
+
+                const amountOfLosesSR = team.childNodes[5].children[0].innerText;
+                res.amountOfLoses = team.childNodes[5].innerText.replace(amountOfLosesSR, '');
+
+                const amountOfGolesSR = team.childNodes[6].children[0].innerText;
+                res.amountOfGoles = team.childNodes[6].innerText.replace(amountOfGolesSR, '');
+
+                const pointesSR = team.childNodes[7].children[0].innerText;
+                res.points = team.childNodes[7].innerText.replace(pointesSR, '');
+
                 res.season = season;
                 leageData.push(res);
             });
