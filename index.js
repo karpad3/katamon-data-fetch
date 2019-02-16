@@ -37,8 +37,8 @@ app.get('/getGames', function (req, res) {
                 res.date = game.childNodes[1].innerText.replace(dateSR, '');
                 const homeTeamSR = game.childNodes[3].children[0].innerText;
                 const teams = game.childNodes[3].innerText.replace(homeTeamSR, '');
-                res.homeTeam = teams.split('-')[0].replace(/\r?\n?\t|\r/g, '');
-                res.awayTeam = teams.split('-')[1].replace(/\r?\n?\t|\r/g, '');
+                res.homeTeam = teams.replace('י-ם', 'ירושלים').split('-')[0].replace(/\r?\n?\t|\r/g, '');
+                res.awayTeam = teams.replace('י-ם', 'ירושלים').split('-')[1].replace(/\r?\n?\t|\r/g, '');
                 const locationSR = game.childNodes[5].children[0].innerText;
                 res.location = game.childNodes[5].innerText.replace(locationSR, '');
                 const timeSR = game.childNodes[7].children[0].innerText;
