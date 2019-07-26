@@ -6,8 +6,8 @@ const app = express();
 
 const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
 
-const SEASON_ID = '20';
-const SEASON = '2018-2019';
+const SEASON_ID = '21';
+const SEASON = '2019-2020';
 
 app.get('/getGames', function (req, res) {
 
