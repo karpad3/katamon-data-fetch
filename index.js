@@ -1,17 +1,12 @@
 const express = require('express');
-
 const puppeteer = require('puppeteer');
-
 const app = express();
 
-const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
-
-const SEASON_ID = process.env.SEASON_ID
-const SEASON = process.env.SEASON
+const {SEASON_ID, SEASON} = process.env
 
 app.get('/getGames', function (req, res) {
 
-    let scrape = async () => {
+    const scrape = async () => {
         const browser = await puppeteer.launch({
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
@@ -79,7 +74,7 @@ app.get('/getLeagueTable', function (req, res) {
                 const res = {};
 
                 res._id = `${season}-${index + 1}`;
-            //     debugger
+            
                 const rankSR = team.childNodes[0].children[0].innerText;
                 res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
 
@@ -329,91 +324,53 @@ app.get('/getTeams', function (req, res) {
 });
 
 
-app.get('/getImages/:season/:folderName', (req, res) => {
+app.get('/getImages/:season/:folderName/:credit', (req, res) => {
 
-    const currentSeason = req.params.season;
-    const folderName = req.params.folderName;
-    const path = `${currentSeason}/${folderName}`;
+    const {season, folderName, credit} = req.params;
+    const path = `${season}/${folderName}`;
 
-    const ListFilesRequest = require('media-platform-js-sdk').file.ListFilesRequest;
-    const listFilesRequest = new ListFilesRequest().setPageSize(100)
-
-    const mediaPlatform = new MediaPlatform({
-        domain: process.env.WMP_DOMAIN,
-        appId: process.env.WMP_APP_ID,
-        sharedSecret: process.env.WMP_SHARED_SECRET
-    });
-
-    let getImages = async () => {
-        const res = [];
-        const baseURL = '//wixmp-d020067862c3c2034fa3ac3a.wixmp.com';
-        const files = await mediaPlatform.fileManager.listFiles(`/${path}`, listFilesRequest);
-
-        files.files.forEach(file => {
-            res.push({
-                imageUrl: baseURL + file.path,
-                season: currentSeason,
-                folderName
-            })
-        });
-
-        return res;
-    }
-
-    getImages().then((images) => {
-        insertImageToDB(images, currentSeason);
-        res.send(JSON.stringify(images));
-    });
+    const imagesRes =  getFilesFromAWS(path)
+    res.send(JSON.stringify(imagesRes, credit))
+   
+    // getImages().then((images) => {
+    //     insertImageToDB(images, currentSeason);
+        res.send(JSON.stringify(imagesRes));
+    // });
 });
 
 
-app.get('/updateAllImages/:season', (req, res) => {
 
-    const currentSeason = req.params.season;
-    const path = `/${currentSeason}`;
+const getFilesFromAWS = (path) => {
+    const AWS = require('aws-sdk');
 
-    //todo: add credit field
-    getFilesFromMediaPlatform(path).then((data) => {
-        if (data.files) {
-            data.files.forEach(folder => {
-                if (folder.type === "d") {
-                    getFilesFromMediaPlatform(folder.path).then(data => {
-                        const res = [];
-                        const baseURL = '//wixmp-d020067862c3c2034fa3ac3a.wixmp.com';
-                        const folderName = folder.path.replace(`/${currentSeason}/`, "");
-                        if (data.files) {
-                            data.files.forEach((file) => {
-                                res.push({
-                                    imageUrl: baseURL + file.path,
-                                    season: currentSeason,
-                                    folderName
-                                });
-                            });
-                        }
-                        if (res && res.length) {
-                            console.log('inserting', res);
-                            insertImageToDB(res, currentSeason);
-                        }
-                    });
-                }
-            })
-        }
-    });
-});
+    const {
+        S3_ACCESS_KEY,
+        S3_ACCESS_SECRET,
+        S3_UPLOADS_BUCKET,
+        S3_PUBLIC_PATH,
+    } = process.env;
 
 
-const getFilesFromMediaPlatform = (path) => {
-
-    const mediaPlatform = new MediaPlatform({
-        domain: process.env.WMP_DOMAIN,
-        appId: process.env.WMP_APP_ID,
-        sharedSecret: process.env.WMP_SHARED_SECRET
+    const s3 = new AWS.S3({
+        apiVersion: '2006-03-01',
+        accessKeyId: S3_ACCESS_KEY,
+        secretAccessKey: S3_ACCESS_SECRET,
     });
 
-    const ListFilesRequest = require('media-platform-js-sdk').file.ListFilesRequest;
-    const listFilesRequest = new ListFilesRequest().setPageSize(1000)
+    console.log('################', path)
 
-    return mediaPlatform.fileManager.listFiles(path, listFilesRequest);
+    var params = {
+        Bucket: S3_UPLOADS_BUCKET,
+        Key: path,
+       };
+       
+       s3.getObject(params, function(err, data) {
+         if (err) console.log(err, err.stack); // an error occurred
+         else     {
+             console.log(data);      
+             return data
+            }     // successful response
+       });
 }
 
 
