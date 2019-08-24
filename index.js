@@ -2,7 +2,21 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const app = express();
 
-const {SEASON_ID, SEASON} = process.env
+const {
+    SEASON_ID,
+    SEASON,
+    S3_ACCESS_KEY,
+    S3_ACCESS_SECRET,
+    S3_UPLOADS_BUCKET,
+    S3_PUBLIC_PATH
+} = process.env;
+
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3({
+    apiVersion: '2006-03-01',
+    accessKeyId: S3_ACCESS_KEY,
+    secretAccessKey: S3_ACCESS_SECRET
+});
 
 app.get('/getGames', function (req, res) {
 
@@ -74,7 +88,7 @@ app.get('/getLeagueTable', function (req, res) {
                 const res = {};
 
                 res._id = `${season}-${index + 1}`;
-            
+
                 const rankSR = team.childNodes[0].children[0].innerText;
                 res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
 
@@ -113,7 +127,6 @@ app.get('/getLeagueTable', function (req, res) {
         res.send(JSON.stringify(value));
     });
 });
-
 
 app.get('/getGamePlayersData/:gameId', function (req, res) {
 
@@ -237,7 +250,6 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
 
         await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
-
         const result = await page.evaluate((season, game_id) => {
 
             const getJudgesPosition = (judge) => {
@@ -275,7 +287,6 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
                     res[position] = name;
                 }
             });
-
 
             return res;
         }, SEASON, gameId);
@@ -323,58 +334,60 @@ app.get('/getTeams', function (req, res) {
     });
 });
 
-
-app.get('/getImages/:season/:folderName/:credit', (req, res) => {
+app.get('/getImages/:season/:folderName/:credit', async (req, res) => {
 
     const {season, folderName, credit} = req.params;
     const path = `${season}/${folderName}`;
 
-    const imagesRes =  getFilesFromAWS(path)
-    res.send(JSON.stringify(imagesRes, credit))
-   
-    // getImages().then((images) => {
-    //     insertImageToDB(images, currentSeason);
-        res.send(JSON.stringify(imagesRes));
-    // });
-});
+    const files = await getFileListFromAWS(path);
 
-
-
-const getFilesFromAWS = (path) => {
-    const AWS = require('aws-sdk');
-
-    const {
-        S3_ACCESS_KEY,
-        S3_ACCESS_SECRET,
-        S3_UPLOADS_BUCKET,
-        S3_PUBLIC_PATH,
-    } = process.env;
-
-
-    const s3 = new AWS.S3({
-        apiVersion: '2006-03-01',
-        accessKeyId: S3_ACCESS_KEY,
-        secretAccessKey: S3_ACCESS_SECRET,
+    let images = [];
+    files.forEach((file) => {
+        images.push({
+            imageUrl: S3_PUBLIC_PATH + "/" + file,
+            season,
+            folderName,
+            credit
+        });
     });
 
-    console.log('################', path)
+    console.log("Updating website with " + images.length + " images");
 
-    var params = {
+    // images.forEach((img, idx) => {
+    //     console.log("Image", idx, ":");
+    //     console.log(JSON.stringify(img));
+    // });
+    await insertImageToDB(images, season);
+
+    res.send("Inserted " + images.length + " images to DB");
+});
+
+const getFileListFromAWS = async (path) => {
+    const params = {
         Bucket: S3_UPLOADS_BUCKET,
-        Key: path,
-       };
-       
-       s3.getObject(params, function(err, data) {
-         if (err) console.log(err, err.stack); // an error occurred
-         else     {
-             console.log(data);      
-             return data
-            }     // successful response
-       });
+        Prefix: path,
+    };
+
+    console.log("Getting file list for path: ", path);
+
+    return new Promise((resolve, reject) => {
+        s3.listObjects(params, function(err, data) {
+            if (err) {
+                console.log(err, err.stack); // an error occurred
+                reject(err);
+            }
+            else {  // successful response
+                console.log("File list received. number of images: ", data.Contents.length);
+
+                resolve(data.Contents.map((obj) => {
+                    return obj.Key;
+                }));
+            }
+        });
+    });
 }
 
-
-const insertImageToDB = (images, season) => {
+const insertImageToDB = async (images, season) => {
     const request = require("request");
 
     const options = {
@@ -392,22 +405,19 @@ const insertImageToDB = (images, season) => {
         json: true
     };
 
-    request(options, function (error, response, body) {
-        if (error) {
-            //throw new Error(error);
-            console.log('error while inserting to db', error);
-        } else {
-            console.log('insert sucess');
-            return response;
-        }
+    return new Promise((resolve, reject) => {
+        request(options, function (error, response, body) {
+            if (error) {
+                console.log('Error while inserting images to db', error);
+                reject(error);
+            } else {
+                console.log('Images inserted to DB successfully');
+                resolve();
+            }
+        });
     });
-
 }
 
 app.listen(process.env.PORT || 5000);
 console.log('listening on port ', process.env.PORT || 5000, '...');
-
-
-
-
 
