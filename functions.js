@@ -32,7 +32,7 @@ const getGameData = (game, index, gameType, season) => {
   const score = game.childNodes[9].innerText.replace(scoreSR, '');
 
   res.score = score === 'טרם נקבעה' ? '' : score.trim();
-  res.finished = score !== 'טרם נקבעה';
+  res.finished = gameId !== "-1";
 
   return res;
 }
