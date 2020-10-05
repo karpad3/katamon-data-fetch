@@ -5,6 +5,7 @@ const app = express();
 const {
     SEASON_ID,
     SEASON,
+    SITE_URL,
     S3_ACCESS_KEY,
     S3_ACCESS_SECRET,
     S3_UPLOADS_BUCKET,
@@ -18,52 +19,55 @@ const s3 = new AWS.S3({
     secretAccessKey: S3_ACCESS_SECRET
 });
 
+
 app.get('/getGames', function (req, res) {
 
     const scrape = async () => {
         const browser = await puppeteer.launch({
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
-        const page = await browser.newPage();
-        await page.goto(`http://football.org.il/team-details/team-games/?team_id=5981&season_id=${SEASON_ID}`);
 
-        const result = await page.evaluate((season) => {
+        const page = await browser.newPage();
+        await page.goto(`http://football.org.il/team-details/team-games/?team_id=5981&season_id=${SEASON_ID}`)
+
+        await page.addScriptTag({path: "functions.js"});
+
+        const leagueGames = await page.evaluate((season) => {
             const data = [];
             const table = document.querySelector('.table_row_group');
             const games = table.querySelectorAll('.table_row');
 
             games.forEach((game, index) => {
-                const res = {};
-
-                const urlParams = game.href.split("=");
-                const gameId = urlParams[urlParams.length - 1];
-
-                res._id = `${season}-${index}`;
-                res.number = index + 1;
-                res.gameId = gameId;
-                res.season = season;
-                const dateSR = game.childNodes[1].children[0].innerText;
-                res.date = game.childNodes[1].innerText.replace(dateSR, '');
-                const homeTeamSR = game.childNodes[3].children[0].innerText;
-                const teams = game.childNodes[3].innerText.replace(homeTeamSR, '');
-                res.homeTeam = teams.replace('י-ם', 'ירושלים').split('-')[0].replace(/\r?\n?\t|\r/g, '');
-                res.awayTeam = teams.replace('י-ם', 'ירושלים').split('-')[1].replace(/\r?\n?\t|\r/g, '');
-                const locationSR = game.childNodes[5].children[0].innerText;
-                res.location = game.childNodes[5].innerText.replace(locationSR, '');
-                const timeSR = game.childNodes[7].children[0].innerText;
-                const time = game.childNodes[7].innerText.replace(timeSR, '');
-                res.time = time === '00:00' ? '' : time;
-                const scoreSR = game.childNodes[9].children[0].innerText;
-                const score = game.childNodes[9].innerText.replace(scoreSR, '');
-                res.score = score === 'טרם נקבעה' ? '' : score;
-                res.finished = score !== 'טרם נקבעה';
-                data.push(res);
+                data.push(getGameData(game, index, 'league', season));
             });
             return data;
         }, SEASON);
 
+        await Promise.all([
+              page.waitForNavigation(),
+              page.goto('https://www.football.org.il/team-details/?team_id=5981')
+        ]);
+
+        await page.addScriptTag({path: "functions.js"});
+
+        const totoGames = await page.evaluate((season) => {
+
+            const gamesRaw = document.querySelectorAll('a[href*=\game_id]');
+
+            const _totoGames = []
+            gamesRaw.forEach((game, index) => {
+              // get only toto games
+                if(game.innerText.includes('טוטו') && game.innerText.includes('תוצאה')){
+                    _totoGames.push(game);
+                }
+            });
+
+            return _totoGames.map((game, index) => getGameData(game, index, 'toto', season));
+        }, SEASON);
+
+
         browser.close();
-        return result;
+        return leagueGames.concat(totoGames);
     };
 
     scrape().then((value) => {
@@ -89,29 +93,34 @@ app.get('/getLeagueTable', function (req, res) {
 
                 res._id = `${season}-${index + 1}`;
 
+                const teamIdIndex =  team.href && team.href.search('team_id')
+                const teamIdHref = teamIdIndex > 0 && team.href.slice(teamIdIndex)
+
+                res.teamId = teamIdHref && teamIdHref.split("=")[1].trim()
+
                 const rankSR = team.childNodes[0].children[0].innerText;
                 res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
 
                 const teamNameSR = team.childNodes[1].children[0].innerText;
-                res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '');
+                res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
 
                 const amountOfGamesSR = team.childNodes[2].children[0].innerText;
-                res.amountOfGames = team.childNodes[2].innerText.replace(amountOfGamesSR, '');
+                res.amountOfGames = team.childNodes[2].innerText.replace(amountOfGamesSR, '').trim();
 
                 const amountOfWinsSR = team.childNodes[3].children[0].innerText;
-                res.amountOfWins = team.childNodes[3].innerText.replace(amountOfWinsSR, '');
+                res.amountOfWins = team.childNodes[3].innerText.replace(amountOfWinsSR, '').trim();
 
                 const amountOfTieSR = team.childNodes[4].children[0].innerText;
-                res.amountOfTie = team.childNodes[4].innerText.replace(amountOfTieSR, '');
+                res.amountOfTie = team.childNodes[4].innerText.replace(amountOfTieSR, '').trim();
 
                 const amountOfLosesSR = team.childNodes[5].children[0].innerText;
-                res.amountOfLoses = team.childNodes[5].innerText.replace(amountOfLosesSR, '');
+                res.amountOfLoses = team.childNodes[5].innerText.replace(amountOfLosesSR, '').trim();
 
                 const amountOfGolesSR = team.childNodes[6].children[0].innerText;
-                res.amountOfGoles = team.childNodes[6].innerText.replace(amountOfGolesSR, '');
+                res.amountOfGoles = team.childNodes[6].innerText.replace(amountOfGolesSR, '').trim();
 
                 const pointesSR = team.childNodes[7].children[0].innerText;
-                res.points = team.childNodes[7].innerText.replace(pointesSR, '');
+                res.points = team.childNodes[7].innerText.replace(pointesSR, '').trim();
 
                 res.season = season;
                 leageData.push(res);
@@ -317,8 +326,15 @@ app.get('/getTeams', function (req, res) {
                 const res = {};
 
                 res._id = `${season}-${index + 1}`;
+
+                const teamIdIndex =  team.href && team.href.search('team_id')
+                const teamIdHref = teamIdIndex > 0 && team.href.slice(teamIdIndex)
+
+                res.teamId = teamIdHref && teamIdHref.split("=")[1]
+
                 const teamNameSR = team.childNodes[1].children[0].innerText;
-                res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '');
+                res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
+
                 res.season = season;
                 data.push(res);
             });
@@ -392,7 +408,7 @@ const insertImageToDB = async (images, season) => {
 
     const options = {
         method: 'POST',
-        url: 'https://taldo8.wixsite.com/katamon2/_functions/updateImage',
+        url: `${SITE_URL}_functions/updateImage`,
         headers:
         {
             'cache-control': 'no-cache',
@@ -420,4 +436,3 @@ const insertImageToDB = async (images, season) => {
 
 app.listen(process.env.PORT || 5000);
 console.log('listening on port ', process.env.PORT || 5000, '...');
-
