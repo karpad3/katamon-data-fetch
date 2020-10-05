@@ -2,6 +2,7 @@
 const getGameData = (game, index, gameType, season) => {
   const res = {}
 
+
   const urlp = game.href.split("=")
   const gameId = urlp[urlp.length - 1];
 
