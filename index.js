@@ -183,19 +183,24 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
             const getGameEventTime = (player, eventSelector) => {
                 const event = player.querySelector(eventSelector);
                 if (event) {
-                    const yellowNode = event.innerHTML.split(">");
-                    return yellowNode[yellowNode.length - 1];
+                    const text = event.innerText.match(numberPattern)[0]
+                    player.querySelector('.moves').removeChild(event)
+                    return text
                 }
                 return null;
             };
 
             const getGoalsData = (player) => {
-                let eventsText = player.querySelector('.moves').innerText;
-                eventsText = eventsText.replace(/שערדקה/g, 'a');
-                let goals = eventsText.match(/\b[a](\d*\.?\d+)/g);
-                if (goals && goals.length) {
-                    goals = goals.map(item => item.replace(/a/g, ""));
-                    return JSON.stringify(goals);
+                let goals = []
+                const moves = player.querySelector('.moves').innerText.split(" ")
+                moves.forEach((item, i) => {
+                  if(item.includes('שער')){
+                    const goalTime = item.match(numberPattern)
+                    goals = goals.concat(goalTime)
+                  }
+                });
+                if(goals.length > 0){
+                  return JSON.stringify(goals);
                 } else {
                     return null;
                 }
