@@ -43,6 +43,35 @@ app.get('/getGames', function (req, res) {
             return data;
         }, SEASON);
 
+
+        await Promise.all([
+              page.waitForNavigation(),
+              page.goto(`http://football.org.il/en/team-details/team-games/?team_id=5981&season_id=${SEASON_ID}`)
+        ]);
+
+        await page.addScriptTag({path: "functions.js"});
+
+        const englishGames = await page.evaluate((season) => {
+            const data = [];
+            const table = document.querySelector('.table_row_group');
+            const games = table.querySelectorAll('.table_row');
+
+            games.forEach((game, index) => {
+                data.push(getGameData(game, index, 'league', season, true));
+            });
+            return data;
+        }, SEASON);
+
+        leagueGames.forEach((game, i) => {
+          const endate = englishGames[i] && englishGames[i].date
+            const gameIndex = englishGames.findIndex(x => x.date === game.date)
+            if(gameIndex != -1){
+              game.locationEN = englishGames[gameIndex].location
+            }
+        });
+
+
+
         await Promise.all([
               page.waitForNavigation(),
               page.goto('https://www.football.org.il/team-details/?team_id=5981')
@@ -323,31 +352,41 @@ app.get('/getTeams', function (req, res) {
         const page = await browser.newPage();
         await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
 
-        const result = await page.evaluate((season) => {
+          await page.addScriptTag({path: "functions.js"});
+
+        const teams = await page.evaluate((season) => {
             const data = [];
             const teams = document.querySelectorAll('.playoff-container > .table_row')
 
             teams.forEach((team, index) => {
-                const res = {};
-
-                res._id = `${season}-${index + 1}`;
-
-                const teamIdIndex =  team.href && team.href.search('team_id')
-                const teamIdHref = teamIdIndex > 0 && team.href.slice(teamIdIndex)
-
-                res.teamId = teamIdHref && teamIdHref.split("=")[1]
-
-                const teamNameSR = team.childNodes[1].children[0].innerText;
-                res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
-
-                res.season = season;
-                data.push(res);
+                data.push(getTeamsData(team, index, season));
             });
             return data;
         }, SEASON);
 
+        await Promise.all([
+              page.waitForNavigation(),
+              page.goto(`http://football.org.il/en/leagues/league/?league_id=45&season_id=${SEASON_ID}`)
+        ]);
+
+        await page.addScriptTag({path: "functions.js"});
+
+        const teamsEnglish = await page.evaluate((season) => {
+            const data = [];
+            const teams = document.querySelectorAll('.playoff-container > .table_row')
+
+            teams.forEach((team, index) => {
+                data.push(getTeamsData(team, index, season));
+            });
+            return data;
+        }, SEASON);
+
+        teams.forEach((team, i) => {
+          team.teamNameEn =  teamsEnglish[i].teamName
+        });
+
         browser.close();
-        return result;
+        return teams;
     };
 
     scrape().then((value) => {

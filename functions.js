@@ -1,7 +1,6 @@
 
-const getGameData = (game, index, gameType, season) => {
+const getGameData = (game, index, gameType, season, isEnglish) => {
   const res = {}
-
 
   const urlp = game.href.split("=")
   const gameId = urlp[urlp.length - 1];
@@ -13,7 +12,15 @@ const getGameData = (game, index, gameType, season) => {
   res.gameType = gameType
 
   const dateSR = game.childNodes[1].children[0].innerText;
-  res.date = game.childNodes[1].innerText.replace(dateSR, '').trim();
+  const date = game.childNodes[1].innerText.replace(dateSR, '').trim();
+  res.date = date
+  if(isEnglish){
+    // format english date
+    let [m,d,y] = date.split('/')
+    d = d.length === 1 ? 0+d : d // pad Zero
+    m = m.length === 1 ? 0+m : m // pad Zero
+    res.date = [d,m,y].join('/')
+  }
 
   const homeTeamSR = game.childNodes[3].children[0].innerText;
   const teams = game.childNodes[3].innerText.replace(homeTeamSR, '');
@@ -38,4 +45,22 @@ const getGameData = (game, index, gameType, season) => {
   res.finished = gameId !== "-1";
 
   return res;
+}
+
+
+const getTeamsData = (team, index, season) => {
+  const res = {};
+
+  res._id = `${season}-${index + 1}`;
+
+  const teamIdIndex =  team.href && team.href.search('team_id')
+  const teamIdHref = teamIdIndex > 0 && team.href.slice(teamIdIndex)
+
+  res.teamId = teamIdHref && teamIdHref.split("=")[1]
+
+  const teamNameSR = team.childNodes[1].children[0].innerText;
+  res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
+
+  res.season = season;
+  return res
 }
