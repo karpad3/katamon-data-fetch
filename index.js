@@ -21,13 +21,13 @@ const s3 = new AWS.S3({
 
 
 app.get('/getGames', function (req, res) {
-
     const scrape = async () => {
         const browser = await puppeteer.launch({
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
 
         const page = await browser.newPage();
+        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
         await page.goto(`http://football.org.il/team-details/team-games/?team_id=5981&season_id=${SEASON_ID}`)
 
         await page.addScriptTag({path: "functions.js"});
@@ -63,10 +63,12 @@ app.get('/getGames', function (req, res) {
         }, SEASON);
 
         leagueGames.forEach((game, i) => {
-          const endate = englishGames[i] && englishGames[i].date
-            const gameIndex = englishGames.findIndex(x => x.date === game.date)
-            if(gameIndex != -1){
-              game.locationEN = englishGames[gameIndex].location
+            if (game != null) {
+                const endate = englishGames[i] && englishGames[i].date;
+                const gameIndex = englishGames.findIndex(x => x.date === game.date);
+                if (gameIndex != -1) {
+                    game.locationEN = englishGames[gameIndex].location;
+                }
             }
         });
 
@@ -96,7 +98,7 @@ app.get('/getGames', function (req, res) {
 
 
         browser.close();
-        return leagueGames.concat(totoGames);
+        return leagueGames.concat(totoGames).filter(x => x);    // The filter removes null values
     };
 
     scrape().then((value) => {

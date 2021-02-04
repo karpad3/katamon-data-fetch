@@ -41,6 +41,10 @@ const getGameData = (game, index, gameType, season, isEnglish) => {
   const scoreSR = game.childNodes[9].children[0].innerText;
   const score = game.childNodes[9].innerText.replace(scoreSR, '');
 
+  if (score.trim() === 'לא סופית') {
+    return null;
+  }
+
   res.score = score === 'טרם נקבעה' ? '' : score.trim();
   res.finished = gameId !== "-1";
 
