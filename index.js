@@ -43,6 +43,18 @@ app.get('/getGames', function (req, res) {
             return data;
         }, SEASON);
 
+        // Fix indexing when there are null games
+        let ignoredLeagueGames = 0;
+        for (game of leagueGames) {
+            if (game == null) {
+                ignoredLeagueGames++;
+            }
+            else {
+                game.number -= ignoredLeagueGames;
+                game._id = game._id.split("-")[0] + "-" + game._id.split("-")[1] + "-" + (parseInt(game._id.split("-")[2], 10) - ignoredLeagueGames);
+            }
+        }
+
 
         await Promise.all([
               page.waitForNavigation(),
