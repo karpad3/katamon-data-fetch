@@ -45,8 +45,8 @@ const getGameData = (game, index, gameType, season, isEnglish) => {
     return null;
   }
 
-  res.score = score === 'טרם נקבעה' ? '' : score.trim();
-  res.finished = gameId !== "-1";
+  res.finished = score.trim() !== 'טרם נקבעה';
+  res.score = !res.finished ? '' : score.trim();
 
   return res;
 }
