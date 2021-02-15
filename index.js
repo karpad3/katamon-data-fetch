@@ -125,12 +125,12 @@ app.get('/getLeagueTable', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
-        await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
+        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
+        await page.goto('https://www.football.org.il/team-details/?team_id=5981');
 
         const result = await page.evaluate((season) => {
             const leageData = [];
-            const teams = document.querySelectorAll('.playoff-container > .table_row')
-
+            const teams = document.querySelectorAll('.table_side_title:first-of-type > .table_row')
             teams.forEach((team, index) => {
                 const res = {};
 
@@ -141,29 +141,29 @@ app.get('/getLeagueTable', function (req, res) {
 
                 res.teamId = teamIdHref && teamIdHref.split("=")[1].trim()
 
-                const rankSR = team.childNodes[0].children[0].innerText;
-                res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
+                const rankSR = team.childNodes[1].children[0].innerText;
+                res.rank = parseInt(team.childNodes[1].innerText.replace(rankSR, ''));
 
-                const teamNameSR = team.childNodes[1].children[0].innerText;
-                res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
+                const teamNameSR = team.childNodes[3].children[0].innerText;
+                res.teamName = team.childNodes[3].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
 
-                const amountOfGamesSR = team.childNodes[2].children[0].innerText;
-                res.amountOfGames = team.childNodes[2].innerText.replace(amountOfGamesSR, '').trim();
+                const amountOfGamesSR = team.childNodes[5].children[0].innerText;
+                res.amountOfGames = team.childNodes[5].innerText.replace(amountOfGamesSR, '').trim();
 
-                const amountOfWinsSR = team.childNodes[3].children[0].innerText;
-                res.amountOfWins = team.childNodes[3].innerText.replace(amountOfWinsSR, '').trim();
+                const amountOfWinsSR = team.childNodes[7].children[0].innerText;
+                res.amountOfWins = team.childNodes[7].innerText.replace(amountOfWinsSR, '').trim();
 
-                const amountOfTieSR = team.childNodes[4].children[0].innerText;
-                res.amountOfTie = team.childNodes[4].innerText.replace(amountOfTieSR, '').trim();
+                const amountOfTieSR = team.childNodes[9].children[0].innerText;
+                res.amountOfTie = team.childNodes[9].innerText.replace(amountOfTieSR, '').trim();
 
-                const amountOfLosesSR = team.childNodes[5].children[0].innerText;
-                res.amountOfLoses = team.childNodes[5].innerText.replace(amountOfLosesSR, '').trim();
+                const amountOfLosesSR = team.childNodes[11].children[0].innerText;
+                res.amountOfLoses = team.childNodes[11].innerText.replace(amountOfLosesSR, '').trim();
 
-                const amountOfGolesSR = team.childNodes[6].children[0].innerText;
-                res.amountOfGoles = team.childNodes[6].innerText.replace(amountOfGolesSR, '').trim();
+                const amountOfGolesSR = team.childNodes[13].children[0].innerText;
+                res.amountOfGoles = team.childNodes[13].innerText.replace(amountOfGolesSR, '').trim();
 
-                const pointesSR = team.childNodes[7].children[0].innerText;
-                res.points = team.childNodes[7].innerText.replace(pointesSR, '').trim();
+                const pointesSR = team.childNodes[15].children[0].innerText;
+                res.points = team.childNodes[15].innerText.replace(pointesSR, '').trim();
 
                 res.season = season;
                 leageData.push(res);
@@ -190,6 +190,7 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
         });
 
         const page = await browser.newPage();
+        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
         await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
         const result = await page.evaluate((season, game_id) => {
@@ -304,7 +305,7 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
-
+        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
         await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
         const result = await page.evaluate((season, game_id) => {
@@ -364,6 +365,7 @@ app.get('/getTeams', function (req, res) {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
+        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
         await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
 
           await page.addScriptTag({path: "functions.js"});
