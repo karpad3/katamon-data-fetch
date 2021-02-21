@@ -238,7 +238,7 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
                 let goals = []
                 const moves = player.querySelector('.moves').innerText.split(" ")
                 moves.forEach((item, i) => {
-                  if(item.includes('שער')){
+                  if(item.includes('שער') || item.includes('פנדל')){
                     const goalTime = item.match(numberPattern)
                     goals = goals.concat(goalTime)
                   }
