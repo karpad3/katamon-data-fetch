@@ -19,163 +19,174 @@ const s3 = new AWS.S3({
     secretAccessKey: S3_ACCESS_SECRET
 });
 
+const scrapeGames = async (teamId) => {
+    const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
 
-app.get('/getGames', function (req, res) {
-    const scrape = async () => {
-        const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+    const page = await browser.newPage();
+    page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
+    await page.goto(`http://football.org.il/team-details/team-games/?team_id=${teamId}&season_id=${SEASON_ID}`)
+
+    await page.addScriptTag({path: "functions.js"});
+
+    const leagueGames = await page.evaluate((season) => {
+        const data = [];
+        const table = document.querySelector('.table_row_group');
+        const games = table.querySelectorAll('.table_row');
+
+        games.forEach((game, index) => {
+            data.push(getGameData(game, index, 'league', season));
         });
+        return data;
+    }, SEASON);
 
-        const page = await browser.newPage();
-        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-        await page.goto(`http://football.org.il/team-details/team-games/?team_id=5981&season_id=${SEASON_ID}`)
+    // Fix indexing when there are null games
+    let ignoredLeagueGames = 0;
+    for (game of leagueGames) {
+        if (game == null) {
+            ignoredLeagueGames++;
+        }
+        else {
+            game.number -= ignoredLeagueGames;
+            game._id = game._id.split("-")[0] + "-" + game._id.split("-")[1] + "-" + (parseInt(game._id.split("-")[2], 10) - ignoredLeagueGames);
+        }
+    }
 
-        await page.addScriptTag({path: "functions.js"});
 
-        const leagueGames = await page.evaluate((season) => {
-            const data = [];
-            const table = document.querySelector('.table_row_group');
-            const games = table.querySelectorAll('.table_row');
+    await Promise.all([
+          page.waitForNavigation(),
+          page.goto(`http://football.org.il/en/team-details/team-games/?team_id=${teamId}&season_id=${SEASON_ID}`)
+    ]);
 
-            games.forEach((game, index) => {
-                data.push(getGameData(game, index, 'league', season));
-            });
-            return data;
-        }, SEASON);
+    await page.addScriptTag({path: "functions.js"});
 
-        // Fix indexing when there are null games
-        let ignoredLeagueGames = 0;
-        for (game of leagueGames) {
-            if (game == null) {
-                ignoredLeagueGames++;
-            }
-            else {
-                game.number -= ignoredLeagueGames;
-                game._id = game._id.split("-")[0] + "-" + game._id.split("-")[1] + "-" + (parseInt(game._id.split("-")[2], 10) - ignoredLeagueGames);
+    const englishGames = await page.evaluate((season) => {
+        const data = [];
+        const table = document.querySelector('.table_row_group');
+        const games = table.querySelectorAll('.table_row');
+
+        games.forEach((game, index) => {
+            data.push(getGameData(game, index, 'league', season, true));
+        });
+        return data;
+    }, SEASON);
+
+    leagueGames.forEach((game, i) => {
+        if (game != null) {
+            const endate = englishGames[i] && englishGames[i].date;
+            const gameIndex = englishGames.findIndex(x => x.date === game.date);
+            if (gameIndex != -1) {
+                game.locationEN = englishGames[gameIndex].location;
             }
         }
+    });
 
 
-        await Promise.all([
-              page.waitForNavigation(),
-              page.goto(`http://football.org.il/en/team-details/team-games/?team_id=5981&season_id=${SEASON_ID}`)
-        ]);
+    await Promise.all([
+          page.waitForNavigation(),
+          page.goto('https://www.football.org.il/team-details/?team_id=${teamId}')
+    ]);
 
-        await page.addScriptTag({path: "functions.js"});
+    await page.addScriptTag({path: "functions.js"});
 
-        const englishGames = await page.evaluate((season) => {
-            const data = [];
-            const table = document.querySelector('.table_row_group');
-            const games = table.querySelectorAll('.table_row');
+    const totoGames = await page.evaluate((season) => {
 
-            games.forEach((game, index) => {
-                data.push(getGameData(game, index, 'league', season, true));
-            });
-            return data;
-        }, SEASON);
+        const gamesRaw = document.querySelectorAll('a[href*=\game_id]');
 
-        leagueGames.forEach((game, i) => {
-            if (game != null) {
-                const endate = englishGames[i] && englishGames[i].date;
-                const gameIndex = englishGames.findIndex(x => x.date === game.date);
-                if (gameIndex != -1) {
-                    game.locationEN = englishGames[gameIndex].location;
-                }
+        const _totoGames = []
+        gamesRaw.forEach((game, index) => {
+          // get only toto games
+            if(game.innerText.includes('טוטו') && game.innerText.includes('תוצאה')){
+                _totoGames.push(game);
             }
         });
 
+        return _totoGames.map((game, index) => getGameData(game, index, 'toto', season));
+    }, SEASON);
 
 
-        await Promise.all([
-              page.waitForNavigation(),
-              page.goto('https://www.football.org.il/team-details/?team_id=5981')
-        ]);
+    browser.close();
+    return leagueGames.concat(totoGames).filter(x => x);    // The filter removes null values
+};
 
-        await page.addScriptTag({path: "functions.js"});
-
-        const totoGames = await page.evaluate((season) => {
-
-            const gamesRaw = document.querySelectorAll('a[href*=\game_id]');
-
-            const _totoGames = []
-            gamesRaw.forEach((game, index) => {
-              // get only toto games
-                if(game.innerText.includes('טוטו') && game.innerText.includes('תוצאה')){
-                    _totoGames.push(game);
-                }
-            });
-
-            return _totoGames.map((game, index) => getGameData(game, index, 'toto', season));
-        }, SEASON);
-
-
-        browser.close();
-        return leagueGames.concat(totoGames).filter(x => x);    // The filter removes null values
-    };
-
-    scrape().then((value) => {
+app.get('/getGames', function (req, res) {
+    scrapeGames(5981).then((value) => {
         res.send(JSON.stringify(value));
     });
 
 });
 
-app.get('/getLeagueTable', function (req, res) {
-    let scrape = async () => {
-        const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+app.get('/getWomenGames', function (req, res) {
+    scrapeGames(7196).then((value) => {
+        res.send(JSON.stringify(value));
+    });
+
+});
+
+const scrapeLeagueTable = async (teamId) => {
+    const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
+    await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}`);
+
+    const result = await page.evaluate((season) => {
+        const leageData = [];
+        const teams = document.querySelectorAll('.table_side_title:first-of-type > .table_row')
+        teams.forEach((team, index) => {
+            const res = {};
+
+            res._id = `${season}-${index + 1}`;
+
+            const teamIdIndex =  team.href && team.href.search('team_id')
+            const teamIdHref = teamIdIndex > 0 && team.href.slice(teamIdIndex)
+
+            res.teamId = teamIdHref && teamIdHref.split("=")[1].trim()
+
+            const rankSR = team.childNodes[1].children[0].innerText;
+            res.rank = parseInt(team.childNodes[1].innerText.replace(rankSR, ''));
+
+            const teamNameSR = team.childNodes[3].children[0].innerText;
+            res.teamName = team.childNodes[3].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
+
+            const amountOfGamesSR = team.childNodes[5].children[0].innerText;
+            res.amountOfGames = team.childNodes[5].innerText.replace(amountOfGamesSR, '').trim();
+
+            const amountOfWinsSR = team.childNodes[7].children[0].innerText;
+            res.amountOfWins = team.childNodes[7].innerText.replace(amountOfWinsSR, '').trim();
+
+            const amountOfTieSR = team.childNodes[9].children[0].innerText;
+            res.amountOfTie = team.childNodes[9].innerText.replace(amountOfTieSR, '').trim();
+
+            const amountOfLosesSR = team.childNodes[11].children[0].innerText;
+            res.amountOfLoses = team.childNodes[11].innerText.replace(amountOfLosesSR, '').trim();
+
+            const amountOfGolesSR = team.childNodes[13].children[0].innerText;
+            res.amountOfGoles = team.childNodes[13].innerText.replace(amountOfGolesSR, '').trim();
+
+            const pointesSR = team.childNodes[15].children[0].innerText;
+            res.points = team.childNodes[15].innerText.replace(pointesSR, '').trim();
+
+            res.season = season;
+            leageData.push(res);
         });
-        const page = await browser.newPage();
-        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-        await page.goto('https://www.football.org.il/team-details/?team_id=5981');
+        return leageData;
+    }, SEASON);
 
-        const result = await page.evaluate((season) => {
-            const leageData = [];
-            const teams = document.querySelectorAll('.table_side_title:first-of-type > .table_row')
-            teams.forEach((team, index) => {
-                const res = {};
+    browser.close();
+    return result;
+};
 
-                res._id = `${season}-${index + 1}`;
+app.get('/getLeagueTable', function (req, res) {
+    scrapeLeagueTable(5981).then((value) => {
+        res.send(JSON.stringify(value));
+    });
+});
 
-                const teamIdIndex =  team.href && team.href.search('team_id')
-                const teamIdHref = teamIdIndex > 0 && team.href.slice(teamIdIndex)
-
-                res.teamId = teamIdHref && teamIdHref.split("=")[1].trim()
-
-                const rankSR = team.childNodes[1].children[0].innerText;
-                res.rank = parseInt(team.childNodes[1].innerText.replace(rankSR, ''));
-
-                const teamNameSR = team.childNodes[3].children[0].innerText;
-                res.teamName = team.childNodes[3].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
-
-                const amountOfGamesSR = team.childNodes[5].children[0].innerText;
-                res.amountOfGames = team.childNodes[5].innerText.replace(amountOfGamesSR, '').trim();
-
-                const amountOfWinsSR = team.childNodes[7].children[0].innerText;
-                res.amountOfWins = team.childNodes[7].innerText.replace(amountOfWinsSR, '').trim();
-
-                const amountOfTieSR = team.childNodes[9].children[0].innerText;
-                res.amountOfTie = team.childNodes[9].innerText.replace(amountOfTieSR, '').trim();
-
-                const amountOfLosesSR = team.childNodes[11].children[0].innerText;
-                res.amountOfLoses = team.childNodes[11].innerText.replace(amountOfLosesSR, '').trim();
-
-                const amountOfGolesSR = team.childNodes[13].children[0].innerText;
-                res.amountOfGoles = team.childNodes[13].innerText.replace(amountOfGolesSR, '').trim();
-
-                const pointesSR = team.childNodes[15].children[0].innerText;
-                res.points = team.childNodes[15].innerText.replace(pointesSR, '').trim();
-
-                res.season = season;
-                leageData.push(res);
-            });
-            return leageData;
-        }, SEASON);
-
-        browser.close();
-        return result;
-    };
-
-    scrape().then((value) => {
+app.get('/getWomenLeagueTable', function (req, res) {
+    scrapeLeagueTable(7196).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
@@ -358,54 +369,59 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
     });
 });
 
+const scrapeTeams = async (leagueId) => {
+    const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
+    await page.goto(`http://football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
+
+      await page.addScriptTag({path: "functions.js"});
+
+    const teams = await page.evaluate((season) => {
+        const data = [];
+        const teams = document.querySelectorAll('.playoff-container > .table_row')
+
+        teams.forEach((team, index) => {
+            data.push(getTeamsData(team, index, season));
+        });
+        return data;
+    }, SEASON);
+
+    await Promise.all([
+          page.waitForNavigation(),
+          page.goto(`http://football.org.il/en/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`)
+    ]);
+
+    await page.addScriptTag({path: "functions.js"});
+
+    const teamsEnglish = await page.evaluate((season) => {
+        const data = [];
+        const teams = document.querySelectorAll('.playoff-container > .table_row')
+
+        teams.forEach((team, index) => {
+            data.push(getTeamsData(team, index, season));
+        });
+        return data;
+    }, SEASON);
+
+    teams.forEach((team, i) => {
+      team.teamNameEn =  teamsEnglish[i].teamName
+    });
+
+    browser.close();
+    return teams;
+};
+
 app.get('/getTeams', function (req, res) {
+    scrapeTeams(45).then((value) => {
+        res.send(JSON.stringify(value));
+    });
+});
 
-    let scrape = async () => {
-        const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
-        const page = await browser.newPage();
-        page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-        await page.goto(`http://football.org.il/leagues/league/?league_id=45&season_id=${SEASON_ID}`);
-
-          await page.addScriptTag({path: "functions.js"});
-
-        const teams = await page.evaluate((season) => {
-            const data = [];
-            const teams = document.querySelectorAll('.playoff-container > .table_row')
-
-            teams.forEach((team, index) => {
-                data.push(getTeamsData(team, index, season));
-            });
-            return data;
-        }, SEASON);
-
-        await Promise.all([
-              page.waitForNavigation(),
-              page.goto(`http://football.org.il/en/leagues/league/?league_id=45&season_id=${SEASON_ID}`)
-        ]);
-
-        await page.addScriptTag({path: "functions.js"});
-
-        const teamsEnglish = await page.evaluate((season) => {
-            const data = [];
-            const teams = document.querySelectorAll('.playoff-container > .table_row')
-
-            teams.forEach((team, index) => {
-                data.push(getTeamsData(team, index, season));
-            });
-            return data;
-        }, SEASON);
-
-        teams.forEach((team, i) => {
-          team.teamNameEn =  teamsEnglish[i].teamName
-        });
-
-        browser.close();
-        return teams;
-    };
-
-    scrape().then((value) => {
+app.get('/getWomenTeams', function (req, res) {
+    scrapeTeams(741).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
