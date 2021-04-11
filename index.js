@@ -136,7 +136,7 @@ const scrapeLeagueTable = async (teamId) => {
 
     const result = await page.evaluate((season) => {
         const leageData = [];
-        const teams = document.querySelectorAll('.table_side_title:first-of-type > .table_row')
+        const teams = document.querySelectorAll('.table_side_title:first-of-type .table_row')
         teams.forEach((team, index) => {
             const res = {};
 
