@@ -25,8 +25,8 @@ const getGameData = (game, index, gameType, season, isEnglish) => {
   const homeTeamSR = game.childNodes[3].children[0].innerText;
   const teams = game.childNodes[3].innerText.replace(homeTeamSR, '');
 
-  const homeTeam = teams.replace('י-ם', 'ירושלים').split('-')[0].replace(/\r?\n?\t|\r/g, '').trim();
-  const awayTeam = teams.replace('י-ם', 'ירושלים').split('-')[1].replace(/\r?\n?\t|\r/g, '').trim();
+  const homeTeam = teams.replace(/י\-ם/g, 'ירושלים').split('-')[0].replace(/\r?\n?\t|\r/g, '').trim();
+  const awayTeam = teams.replace(/י\-ם/g, 'ירושלים').split('-')[1].replace(/\r?\n?\t|\r/g, '').trim();
 
   res.homeTeam = homeTeam.replace(/[.]/g, '')
   res.awayTeam = awayTeam.replace(/[.]/g, '')
