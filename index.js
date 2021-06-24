@@ -28,7 +28,7 @@ const scrapeGames = async (teamId) => {
 
     const page = await browser.newPage();
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-    await page.goto(`http://football.org.il/team-details/team-games/?team_id=${teamId}`)
+    await page.goto(`http://football.org.il/team-details/team-games/?team_id=${teamId}&season_id=${SEASON_ID}`)
 
     await page.addScriptTag({path: "functions.js"});
 
