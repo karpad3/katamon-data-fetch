@@ -55,35 +55,38 @@ const scrapeGames = async (teamId) => {
         }
     }
 
+    try {
+        await Promise.all([
+              page.waitForNavigation(),
+              page.goto(`http://football.org.il/en/team-details/team-games/?team_id=${teamId}`)
+        ]);
 
-    await Promise.all([
-          page.waitForNavigation(),
-          page.goto(`http://football.org.il/en/team-details/team-games/?team_id=${teamId}`)
-    ]);
+        await page.addScriptTag({path: "functions.js"});
 
-    await page.addScriptTag({path: "functions.js"});
+        const englishGames = await page.evaluate((season) => {
+            const data = [];
+            const table = document.querySelector('.table_row_group');
+            const games = table.querySelectorAll('.table_row');
 
-    const englishGames = await page.evaluate((season) => {
-        const data = [];
-        const table = document.querySelector('.table_row_group');
-        const games = table.querySelectorAll('.table_row');
+            games.forEach((game, index) => {
+                data.push(getGameData(game, index, 'league', season, true));
+            });
+            return data;
+        }, SEASON);
 
-        games.forEach((game, index) => {
-            data.push(getGameData(game, index, 'league', season, true));
-        });
-        return data;
-    }, SEASON);
-
-    leagueGames.forEach((game, i) => {
-        if (game != null) {
-            const endate = englishGames[i] && englishGames[i].date;
-            const gameIndex = englishGames.findIndex(x => x.date === game.date);
-            if (gameIndex != -1) {
-                game.locationEN = englishGames[gameIndex].location;
+        leagueGames.forEach((game, i) => {
+            if (game != null) {
+                const endate = englishGames[i] && englishGames[i].date;
+                const gameIndex = englishGames.findIndex(x => x.date === game.date);
+                if (gameIndex != -1) {
+                    game.locationEN = englishGames[gameIndex].location;
+                }
             }
-        }
-    });
-
+        });
+    } catch(e) {
+        console.log("Error getting english games. Skipping.");
+        console.log(e);
+    }
 
     await Promise.all([
           page.waitForNavigation(),
