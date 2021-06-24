@@ -417,7 +417,7 @@ const scrapeTeams = async (leagueId) => {
 };
 
 app.get('/getTeams', function (req, res) {
-    scrapeTeams(45).then((value) => {
+    scrapeTeams(40).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
