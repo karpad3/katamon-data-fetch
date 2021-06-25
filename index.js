@@ -140,6 +140,7 @@ const scrapeLeagueTable = async (teamId) => {
     const result = await page.evaluate((season) => {
         const leageData = [];
         const teams = document.querySelectorAll('.table_side_title:first-of-type .table_row')
+        let leagueStarted = false;
         teams.forEach((team, index) => {
             const res = {};
 
@@ -175,8 +176,23 @@ const scrapeLeagueTable = async (teamId) => {
             res.points = team.childNodes[15].innerText.replace(pointesSR, '').trim();
 
             res.season = season;
+
+            if (res.amountOfGames > 0) {
+                leagueStarted = true;
+            }
+
             leageData.push(res);
         });
+
+        if (!leagueStarted) {
+            for (team of leageData) {
+                if (team.teamName == "הפועל ירושלים") {
+                    leageData[0].rank = team.rank;
+                    team.rank = 1;
+                }
+            }
+        }
+
         return leageData;
     }, SEASON);
 
