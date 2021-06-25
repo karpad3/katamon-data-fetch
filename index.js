@@ -135,7 +135,7 @@ const scrapeLeagueTable = async (teamId) => {
     });
     const page = await browser.newPage();
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-    await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}`);
+    await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}&season_id=${SEASON_ID}`);
 
     const result = await page.evaluate((season) => {
         const leageData = [];
