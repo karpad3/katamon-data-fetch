@@ -32,7 +32,7 @@ const getGameData = (game, index, gameType, season, isEnglish) => {
   res.awayTeam = awayTeam.replace(/[.]/g, '')
 
   const locationSR = game.childNodes[5].children[0].innerText;
-  res.location = game.childNodes[5].innerText.replace(locationSR, '').trim();
+  res.location = game.childNodes[5].innerText.replace(locationSR, '').replace('ירושלים ', '').trim();
 
   const timeSR = game.childNodes[7].children[0].innerText;
   const time = game.childNodes[7].innerText.replace(timeSR, '');
