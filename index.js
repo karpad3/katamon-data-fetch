@@ -141,6 +141,8 @@ const scrapeLeagueTable = async (leagueId) => {
         const leageData = [];
         const teams = document.querySelectorAll('.playoff-container .table_row')
         let leagueStarted = false;
+        let previousRank = 0;
+        let additionToRank = 0;
         teams.forEach((team, index) => {
             const res = {};
 
@@ -152,8 +154,16 @@ const scrapeLeagueTable = async (leagueId) => {
             res.teamId = teamIdHref && teamIdHref.split("=")[1].trim()
 
             const rankSR = team.childNodes[0].children[0].innerText;
-            res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
 
+            res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
+            if (additionToRank > 0) {
+                res.rank += additionToRank;
+            }
+            else if (res.rank < previousRank) {
+                additionToRank = previousRank;
+                res.rank += additionToRank;
+            }
+            previousRank = res.rank;
             const teamNameSR = team.childNodes[1].children[0].innerText;
             res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
 
