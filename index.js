@@ -452,7 +452,7 @@ app.get('/getTeams', function (req, res) {
 });
 
 app.get('/getWomenTeams', function (req, res) {
-    scrapeTeams(639).then((value) => {
+    scrapeTeams(637).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
