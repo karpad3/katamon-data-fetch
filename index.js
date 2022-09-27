@@ -217,7 +217,7 @@ app.get('/getLeagueTable', function (req, res) {
 });
 
 app.get('/getWomenLeagueTable', function (req, res) {
-    scrapeLeagueTable(639).then((value) => {
+    scrapeLeagueTable(637).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
