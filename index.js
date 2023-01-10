@@ -46,7 +46,7 @@ const scrapeGames = async (teamId) => {
     // Fix indexing when there are null games
     let ignoredLeagueGames = 0;
     for (game of leagueGames) {
-        if (game == null) {
+        if (game == null || (game.finished && game.gameId == -1)) {
             ignoredLeagueGames++;
         }
         else {
@@ -75,7 +75,7 @@ const scrapeGames = async (teamId) => {
         }, SEASON);
 
         leagueGames.forEach((game, i) => {
-            if (game != null) {
+            if (game != null && (!game.finished || game.gameId != -1)) {
                 const endate = englishGames[i] && englishGames[i].date;
                 const gameIndex = englishGames.findIndex(x => x.date === game.date);
                 if (gameIndex != -1) {
@@ -112,7 +112,9 @@ const scrapeGames = async (teamId) => {
 
 
     browser.close();
-    return leagueGames.concat(totoGames).filter(x => x);    // The filter removes null values
+
+    // Remove null values and invalid games
+    return leagueGames.concat(totoGames).filter(g => g && (!g.finished || g.gameId != -1));
 };
 
 app.get('/getGames', function (req, res) {
