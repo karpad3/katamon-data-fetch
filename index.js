@@ -397,9 +397,13 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
         return result;
     };
 
-    scrape().then((value) => {
-        res.send(JSON.stringify(value));
+    try {
+        scrape().then((value) => {
+            res.send(JSON.stringify(value));
     });
+    } catch(e) {
+        console.error("Exception in getGameStaffData", e);
+    }
 });
 
 const scrapeTeams = async (leagueId) => {
