@@ -352,49 +352,53 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
         page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
         await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
-        const result = await page.evaluate((season, game_id) => {
+        try {
+            const result = await page.evaluate((season, game_id) => {
 
-            const getJudgesPosition = (judge) => {
-                const position = judge.querySelector('.position').innerText;
-                switch (position) {
-                    case 'שופט רביעי':
-                        return 'judge4';
-                    case 'עוזר שופט 2':
-                        return 'judge2';
-                    case 'עוזר שופט 1':
-                        return 'judge1';
-                    case 'שופט ראשי':
-                        return 'mainJudge';
-                    default:
-                        return null;
-                }
-            };
+                const getJudgesPosition = (judge) => {
+                    const position = judge.querySelector('.position').innerText;
+                    switch (position) {
+                        case 'שופט רביעי':
+                            return 'judge4';
+                        case 'עוזר שופט 2':
+                            return 'judge2';
+                        case 'עוזר שופט 1':
+                            return 'judge1';
+                        case 'שופט ראשי':
+                            return 'mainJudge';
+                        default:
+                            return null;
+                    }
+                };
 
-            const homeCoach = document.querySelector('#GAME_COACH_HOME').parentElement.querySelector('.player');
-            const awayCoach = document.querySelector('#GAME_COACH_GUEST').parentElement.querySelector('.player');
+                const homeCoach = document.querySelector('#GAME_COACH_HOME').parentElement.querySelector('.player');
+                const awayCoach = document.querySelector('#GAME_COACH_GUEST').parentElement.querySelector('.player');
 
-            res = {
-                _id: `${season}-${game_id}`,
-                gameId: game_id,
-                season: season,
-                homeCoach: homeCoach.querySelector('.name').innerText,
-                awayCoach: awayCoach.querySelector('.name').innerText,
-            };
+                res = {
+                    _id: `${season}-${game_id}`,
+                    gameId: game_id,
+                    season: season,
+                    homeCoach: homeCoach.querySelector('.name').innerText,
+                    awayCoach: awayCoach.querySelector('.name').innerText,
+                };
 
-            const judges = document.querySelector('.judge').querySelectorAll('.player');
-            judges.forEach(judge => {
-                const name = judge.querySelector('.name').innerText;
-                const position = getJudgesPosition(judge);
-                if (position) {
-                    res[position] = name;
-                }
-            });
+                const judges = document.querySelector('.judge').querySelectorAll('.player');
+                judges.forEach(judge => {
+                    const name = judge.querySelector('.name').innerText;
+                    const position = getJudgesPosition(judge);
+                    if (position) {
+                        res[position] = name;
+                    }
+                });
 
-            return res;
-        }, SEASON, gameId);
+                return res;
+            }, SEASON, gameId);
 
-        browser.close();
-        return result;
+            browser.close();
+            return result;
+        } catch(e) {
+            console.error("Exception in getGameStaffData", e);
+        }
     };
 
     try {
