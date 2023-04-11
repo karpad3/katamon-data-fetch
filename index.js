@@ -23,7 +23,8 @@ const s3 = new AWS.S3({
 
 const scrapeGames = async (teamId) => {
     const browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        ignoreHTTPSErrors: true
     });
 
     const page = await browser.newPage();
