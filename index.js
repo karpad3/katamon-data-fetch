@@ -28,7 +28,7 @@ const scrapeGames = async (teamId) => {
 
     const page = await browser.newPage();
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-    await page.goto(`http://football.org.il/team-details/team-games/?team_id=${teamId}&season_id=${SEASON_ID}`)
+    await page.goto(`https://football.org.il/team-details/team-games/?team_id=${teamId}&season_id=${SEASON_ID}`)
 
     await page.addScriptTag({path: "functions.js"});
 
@@ -69,7 +69,7 @@ const scrapeGames = async (teamId) => {
     try {
         await Promise.all([
               page.waitForNavigation(),
-              page.goto(`http://football.org.il/en/team-details/team-games/?team_id=${teamId}`)
+              page.goto(`https://football.org.il/en/team-details/team-games/?team_id=${teamId}`)
         ]);
 
         await page.addScriptTag({path: "functions.js"});
@@ -246,7 +246,7 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
 
         const page = await browser.newPage();
         page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-        await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
+        await page.goto(`https://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
         const result = await page.evaluate((season, game_id) => {
 
@@ -361,7 +361,7 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
         });
         const page = await browser.newPage();
         page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-        await page.goto(`http://football.org.il/leagues/games/game/?game_id=${gameId}`);
+        await page.goto(`https://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
         try {
             const result = await page.evaluate((season, game_id) => {
@@ -427,7 +427,7 @@ const scrapeTeams = async (leagueId) => {
     });
     const page = await browser.newPage();
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-    await page.goto(`http://football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
+    await page.goto(`https://football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
 
       await page.addScriptTag({path: "functions.js"});
 
@@ -443,7 +443,7 @@ const scrapeTeams = async (leagueId) => {
 
     await Promise.all([
           page.waitForNavigation(),
-          page.goto(`http://football.org.il/en/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`)
+          page.goto(`https://football.org.il/en/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`)
     ]);
 
     await page.addScriptTag({path: "functions.js"});
