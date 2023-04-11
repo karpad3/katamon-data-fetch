@@ -32,16 +32,27 @@ const scrapeGames = async (teamId) => {
 
     await page.addScriptTag({path: "functions.js"});
 
-    const leagueGames = await page.evaluate((season) => {
+    const leagueGames = await page.evaluate(async (season) => {
         const data = [];
-        const table = document.querySelector('.table_row_group');
-        const games = table.querySelectorAll('.table_row');
 
-        games.forEach((game, index) => {
-            data.push(getGameData(game, index, 'league', season));
-        });
+        try {
+            const table = document.querySelector('.table_row_group');
+            const games = table.querySelectorAll('.table_row');
+
+            games.forEach((game, index) => {
+                data.push(getGameData(game, index, 'league', season));
+            });
+        } catch(e) {
+            console.log("Error getting games. Skipping.");
+            console.log(e);
+        }
+
         return data;
     }, SEASON);
+
+    if (leagueGames == []) {
+        console.log(await page.content());
+    }
 
     // Fix indexing when there are null games
     let ignoredLeagueGames = 0;
