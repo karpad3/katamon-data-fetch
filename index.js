@@ -143,13 +143,15 @@ app.get('/getWomenGames', function (req, res) {
 
 });
 
-const scrapeLeagueTable = async (leagueId) => {
+// const scrapeLeagueTable = async (leagueId) => {
+const scrapeLeagueTable = async (teamId) => {
     const browser = await puppeteer.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage();
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-    await page.goto(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
+    // await page.goto(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
+    await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}&season_id=${SEASON_ID}`);
 
     const result = await page.evaluate((season) => {
         const leageData = [];
@@ -167,9 +169,11 @@ const scrapeLeagueTable = async (leagueId) => {
 
             res.teamId = teamIdHref && teamIdHref.split("=")[1].trim()
 
-            const rankSR = team.childNodes[0].children[0].innerText;
+            // ind = [0, 1, 2, 3, 4, 5, 6, 7]
+            ind = [1, 3, 5, 7, 9, 11, 13, 15]
+            const rankSR = team.childNodes[ind[0]].children[0].innerText;
 
-            res.rank = parseInt(team.childNodes[0].innerText.replace(rankSR, ''));
+            res.rank = parseInt(team.childNodes[ind[0]].innerText.replace(rankSR, ''));
             if (additionToRank > 0) {
                 res.rank += additionToRank;
             }
@@ -178,26 +182,26 @@ const scrapeLeagueTable = async (leagueId) => {
                 res.rank += additionToRank;
             }
             previousRank = res.rank;
-            const teamNameSR = team.childNodes[1].children[0].innerText;
-            res.teamName = team.childNodes[1].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
+            const teamNameSR = team.childNodes[ind[1]].children[0].innerText;
+            res.teamName = team.childNodes[ind[1]].innerText.replace(teamNameSR, '').replace('י-ם', 'ירושלים').trim();
 
-            const amountOfGamesSR = team.childNodes[2].children[0].innerText;
-            res.amountOfGames = team.childNodes[2].innerText.replace(amountOfGamesSR, '').trim();
+            const amountOfGamesSR = team.childNodes[ind[2]].children[0].innerText;
+            res.amountOfGames = team.childNodes[ind[2]].innerText.replace(amountOfGamesSR, '').trim();
 
-            const amountOfWinsSR = team.childNodes[3].children[0].innerText;
-            res.amountOfWins = team.childNodes[3].innerText.replace(amountOfWinsSR, '').trim();
+            const amountOfWinsSR = team.childNodes[ind[3]].children[0].innerText;
+            res.amountOfWins = team.childNodes[ind[3]].innerText.replace(amountOfWinsSR, '').trim();
 
-            const amountOfTieSR = team.childNodes[4].children[0].innerText;
-            res.amountOfTie = team.childNodes[4].innerText.replace(amountOfTieSR, '').trim();
+            const amountOfTieSR = team.childNodes[ind[4]].children[0].innerText;
+            res.amountOfTie = team.childNodes[ind[4]].innerText.replace(amountOfTieSR, '').trim();
 
-            const amountOfLosesSR = team.childNodes[5].children[0].innerText;
-            res.amountOfLoses = team.childNodes[5].innerText.replace(amountOfLosesSR, '').trim();
+            const amountOfLosesSR = team.childNodes[ind[5]].children[0].innerText;
+            res.amountOfLoses = team.childNodes[ind[5]].innerText.replace(amountOfLosesSR, '').trim();
 
-            const amountOfGolesSR = team.childNodes[6].children[0].innerText;
-            res.amountOfGoles = team.childNodes[6].innerText.replace(amountOfGolesSR, '').trim();
+            const amountOfGolesSR = team.childNodes[ind[6]].children[0].innerText;
+            res.amountOfGoles = team.childNodes[ind[6]].innerText.replace(amountOfGolesSR, '').trim();
 
-            const pointesSR = team.childNodes[7].children[0].innerText;
-            res.points = team.childNodes[7].innerText.replace(pointesSR, '').trim();
+            const pointesSR = team.childNodes[ind[7]].children[0].innerText;
+            res.points = team.childNodes[ind[7]].innerText.replace(pointesSR, '').trim();
 
             res.season = season;
 
@@ -225,13 +229,15 @@ const scrapeLeagueTable = async (leagueId) => {
 };
 
 app.get('/getLeagueTable', function (req, res) {
-    scrapeLeagueTable(40).then((value) => {
+    // scrapeLeagueTable(40).then((value) => {
+    scrapeLeagueTable(5981).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
 
 app.get('/getWomenLeagueTable', function (req, res) {
-    scrapeLeagueTable(637).then((value) => {
+    // scrapeLeagueTable(637).then((value) => {
+    scrapeLeagueTable(7196).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
