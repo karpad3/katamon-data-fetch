@@ -143,16 +143,15 @@ app.get('/getWomenGames', function (req, res) {
 
 });
 
-// const scrapeLeagueTable = async (leagueId) => {
-const scrapeLeagueTable = async (teamId) => {
+const scrapeLeagueTable = async (leagueId) => {
+// const scrapeLeagueTable = async (teamId) => {
     const browser = await puppeteer.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage();
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-    // await page.goto(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
-    await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}&season_id=${SEASON_ID}`);
-
+    await page.goto(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
+    // await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}&season_id=${SEASON_ID}`);
     const result = await page.evaluate((season) => {
         const leageData = [];
         const teams = document.querySelectorAll('.playoff-container .table_row')
@@ -169,8 +168,8 @@ const scrapeLeagueTable = async (teamId) => {
 
             res.teamId = teamIdHref && teamIdHref.split("=")[1].trim()
 
-            // ind = [0, 1, 2, 3, 4, 5, 6, 7]
-            ind = [1, 3, 5, 7, 9, 11, 13, 15]
+            ind = [0, 1, 2, 3, 4, 5, 6, 7]
+            // ind = [1, 3, 5, 7, 9, 11, 13, 15]
             const rankSR = team.childNodes[ind[0]].children[0].innerText;
 
             res.rank = parseInt(team.childNodes[ind[0]].innerText.replace(rankSR, ''));
@@ -229,8 +228,8 @@ const scrapeLeagueTable = async (teamId) => {
 };
 
 app.get('/getLeagueTable', function (req, res) {
-    // scrapeLeagueTable(40).then((value) => {
-    scrapeLeagueTable(5981).then((value) => {
+    scrapeLeagueTable(40).then((value) => {
+    //scrapeLeagueTable(5981).then((value) => {
         res.send(JSON.stringify(value));
     });
 });
