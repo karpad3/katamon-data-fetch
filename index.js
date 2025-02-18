@@ -154,7 +154,7 @@ const scrapeLeagueTable = async (leagueId) => {
     // await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}&season_id=${SEASON_ID}`);
     const result = await page.evaluate((season) => {
         const leageData = [];
-        const teams = document.querySelectorAll('.playoff-container .table_row')
+        const teams = document.querySelectorAll('.table-w-playoff .table_row')
         let leagueStarted = false;
         let previousRank = 0;
         let additionToRank = 0;
