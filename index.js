@@ -1,7 +1,9 @@
 require('dotenv').config();
 
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteer.use(StealthPlugin());
 const app = express();
 
 const {
@@ -24,10 +26,12 @@ const s3 = new AWS.S3({
 const scrapeGames = async (teamId) => {
     const browser = await puppeteer.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        ignoreHTTPSErrors: true
+        ignoreHTTPSErrors: true,
+        headless: false
     });
 
     const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
     await page.goto(`https://football.org.il/team-details/team-games/?team_id=${teamId}&season_id=${SEASON_ID}`)
 
@@ -146,10 +150,13 @@ app.get('/getWomenGames', function (req, res) {
 const scrapeLeagueTable = async (leagueId) => {
 // const scrapeLeagueTable = async (teamId) => {
     const browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        headless: false
     });
     const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
+console.log(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`)
     await page.goto(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
     // await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}&season_id=${SEASON_ID}`);
     const result = await page.evaluate((season) => {
@@ -247,10 +254,12 @@ app.get('/getGamePlayersData/:gameId', function (req, res) {
 
     let scrape = async () => {
         const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        headless: false
         });
 
         const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
         page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
         await page.goto(`https://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
@@ -363,9 +372,11 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
 
     let scrape = async () => {
         const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        headless: false
         });
         const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
         page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
         await page.goto(`https://football.org.il/leagues/games/game/?game_id=${gameId}`);
 
@@ -429,9 +440,11 @@ app.get('/getGameStaffData/:gameId', function (req, res) {
 
 const scrapeTeams = async (leagueId) => {
     const browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        headless: false
     });
     const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
     await page.goto(`https://football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
 
