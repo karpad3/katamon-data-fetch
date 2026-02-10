@@ -156,10 +156,14 @@ const scrapeLeagueTable = async (leagueId) => {
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
     page.on('console', consoleObj => console.log(consoleObj.text()));   // Enables console prints in evaluate callback
-console.log(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`)
+    console.log(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`)
     await page.goto(`https://www.football.org.il/leagues/league/?league_id=${leagueId}&season_id=${SEASON_ID}`);
     // await page.goto(`https://www.football.org.il/team-details/?team_id=${teamId}&season_id=${SEASON_ID}`);
+    console.log("Waiting for league table elements...");
+    await page.waitForSelector('.table-w-playoff .table_row');
+    console.log("Found league table elements. Parsing...");
     const result = await page.evaluate((season) => {
+        // console.log(document.body.innerHTML);
         const leageData = [];
         const teams = document.querySelectorAll('.table-w-playoff .table_row')
         let leagueStarted = false;
